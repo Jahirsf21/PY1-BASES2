@@ -5,7 +5,7 @@ import { listSuppliers } from '../controllers/suppliersController.js'
 const router = Router()
 
 /**
- * GET /customers
+ * GET /suppliers
  * Devuelve una página de Proveedores paginada.
  * Query params: pageNumber  y pageSize
  */
