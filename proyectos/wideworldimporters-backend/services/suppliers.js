@@ -2,11 +2,11 @@ import {getPool} from '../config/database.js'
 import sql from "mssql"
 
 /**
- * Obtiene una página de clientes junto con el total de registros.
+ * Obtiene una página de proveedores junto con el total de registros.
  *
  * @param {number} pageNumber Número de página solicitado.
- * @param {number} pageSize Cantidad de clientes por página.
- * @returns {Promise<object[]>} Clientes devueltos por el procedimiento almacenado.
+ * @param {number} pageSize Cantidad de proveedores por página.
+ * @returns {Promise<object[]>} Proveedores devueltos por el procedimiento almacenado.
  */
 export async function getSuppliers(pageNumber, pageSize) {
     const connection = (await getPool()).request()
