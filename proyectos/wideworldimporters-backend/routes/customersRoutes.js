@@ -7,7 +7,7 @@ const router = Router()
 /**
  * GET /customers
  * Devuelve una página de Clientes paginada.
- * Query params: pageNumber  y pageSize
+ * Query params: pageNumber y pageSize
  */
 router.get('/customers', listCustomers)
 
