@@ -25,23 +25,24 @@
 
 create procedure Sales.GetCustomers
     @PageNumber int = 1,
-    @PageSize int = 10
-as 
+    @PageSize   int = 10,
+    @TotalCount int = 0 output
+as
     begin
-        set nocount on
+        set nocount on;
+        select @TotalCount = count(*) from Customers;
         select
             cs.CustomerID,
             cs.CustomerName as NombreCliente,
             cg.CustomerCategoryName as CategoriaCliente,
-            dv.DeliveryMethodName as MetodoEntrega,
-            count(*) over() as TotalCount
+            dv.DeliveryMethodName as MetodoEntrega
             from Customers cs
             inner join CustomerCategories cg on cs.CustomerCategoryID = cg.CustomerCategoryID
             inner join DeliveryMethods dv on cs.DeliveryMethodID = dv.DeliveryMethodID
             order by cs.CustomerID
-            offset(@PageNumber -1) * @PageSize rows
-            fetch next @PageSize rows only
-    end
+            offset (@PageNumber - 1) * @PageSize rows
+            fetch next @PageSize rows only;
+end
 go
 
 /*
@@ -51,16 +52,17 @@ go
 
 create procedure Purchasing.GetSuppliers
     @PageNumber int = 1,
-    @PageSize int = 10
+    @PageSize int = 10,
+    @TotalCount int = 0 output
 as 
     begin
         set nocount on
+        select @TotalCount = count(*) from Suppliers;
         select
             sp.SupplierID,
             sp.SupplierName as NombreProveedor,
             sg.SupplierCategoryName as CategoriaProveedor,
-            dv.DeliveryMethodName as MetodoEntrega,
-            count(*) over() as TotalCount
+            dv.DeliveryMethodName as MetodoEntrega
             from Suppliers sp
             inner join SupplierCategories sg on sp.SupplierCategoryID = sg.SupplierCategoryID
             left join DeliveryMethods dv on sp.DeliveryMethodID = dv.DeliveryMethodID
@@ -75,18 +77,19 @@ go
     Incluye TotalCount para poder calcular la paginación en el cliente
 */  
 
-create or alter procedure Warehouse.GetStockItems
+create procedure Warehouse.GetStockItems
     @PageNumber int = 1,
-    @PageSize int = 10
+    @PageSize int = 10,
+    @TotalCount int = 0 output 
 as
     begin
         set nocount on
+        select @TotalCount = count(*) from Suppliers
         select 
             s.StockItemID,
             s.StockItemName as NombreProducto,
             sg.StockGroupName as GrupoProducto,
-            sih.QuantityOnHand as CantidadTotalEnInventarios,
-            count(*) over() as TotalCount
+            sih.QuantityOnHand as CantidadTotalEnInventarios
             from StockItems s
             inner join StockItemHoldings sih on s.StockItemID = sih.StockItemID
             inner join StockItemStockGroups sig on s.StockItemID = sig.StockItemID
@@ -101,19 +104,20 @@ go
     Obtiene las facturas en páginas ordenadas por identificador
     Incluye TotalCount para poder calcular la paginación en el cliente
 */  
-create or alter procedure Sales.GetInvoices
+create procedure Sales.GetInvoices
     @PageNumber int = 1,
-    @PageSize int = 10
+    @PageSize int = 10,
+    @TotalCount int = 0 output
 as
     begin
         set nocount on
+        select @TotalCount = count(*) from Invoices
         select
             iv.InvoiceID as NumeroFactura,
             iv.InvoiceDate as FechaFactura,
             cs.CustomerName as NombreCliente,
             dv.DeliveryMethodName as MetodoEntrega,
-            ivl.ExtendedPrice as MontoFacturado,
-            count(*) over() as TotalCount
+            ivl.ExtendedPrice as MontoFacturado
             from Invoices iv
             inner join Customers cs on iv.CustomerID = cs.CustomerID
             inner join DeliveryMethods dv on iv.DeliveryMethodID = dv.DeliveryMethodID
