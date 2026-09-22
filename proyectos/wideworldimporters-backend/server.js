@@ -4,6 +4,7 @@ import {env} from './config/env.js'
 
 import customersRoutes from './routes/customersRoutes.js'
 import supplierRoutes from './routes/suppliersRoutes.js'
+import stockItemsRoutes from './routes/stockItemsRoutes.js'
 
 const app = express()
 
@@ -16,6 +17,7 @@ app.use(express.json())
 // Rutas de la API
 app.use('/api', customersRoutes)
 app.use('/api', supplierRoutes)
+app.use('/api', stockItemsRoutes)
 
 // Middleware para rutas no encontradas
 app.use((req, res)=> {
