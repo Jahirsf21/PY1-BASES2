@@ -7,7 +7,7 @@ const router = Router()
 /**
  * GET /suppliers
  * Devuelve una página de Proveedores paginada.
- * Query params: pageNumber  y pageSize
+ * Query params: pageNumber y pageSize
  */
 router.get('/suppliers', listSuppliers)
 
