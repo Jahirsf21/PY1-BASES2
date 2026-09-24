@@ -6,6 +6,7 @@ import customersRoutes from './routes/customersRoutes.js'
 import supplierRoutes from './routes/suppliersRoutes.js'
 import stockItemsRoutes from './routes/stockItemsRoutes.js'
 import salesRoutes from './routes/salesRoutes.js'
+import applicationRoutes from './routes/applicationRoutes.js'
 
 const app = express()
 
@@ -20,6 +21,7 @@ app.use('/api', customersRoutes)
 app.use('/api', supplierRoutes)
 app.use('/api', stockItemsRoutes)
 app.use('/api', salesRoutes)
+app.use('/api', applicationRoutes)
 
 // Middleware para rutas no encontradas
 app.use((req, res)=> {
