@@ -409,6 +409,22 @@ as
 go
 
 /*
+    Obtiene todos los grupos de productos ordenados por su identificador.
+    Devuelve: StockGroupID, NombreGrupoProducto
+*/
+create procedure Warehouse.GetStockGroups
+as
+    begin
+        set nocount on
+        select
+            StockGroupID,
+            StockGroupName as NombreGrupoProducto
+        from StockGroups
+        order by StockGroupID
+    end
+go
+
+/*
     Obtiene las facturas paginadas, ordenadas por identificador.
     Incluye el total de registros (TotalCount) para calcular la paginación en el cliente.
     Devuelve: NumeroFactura, FechaFactura, NombreCliente, NombreMetodoEntrega, MontoFacturado
