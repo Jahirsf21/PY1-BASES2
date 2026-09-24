@@ -24,3 +24,14 @@ export async function getStockItems(stockItemName, stockGroupID, pageNumber, pag
         data: result.recordset
     }
 }
+
+/**
+ * Obtiene todos los grupos de productos.
+ *
+ * @returns {Promise<object[]>} Listado de grupos de productos.
+ */
+export async function getStockGroups() {
+    const connection = (await getPool()).request()
+    const result = await connection.execute('Warehouse.GetStockGroups')
+    return result.recordset
+}
