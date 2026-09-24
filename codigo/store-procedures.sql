@@ -435,8 +435,8 @@ create procedure Sales.GetInvoices
     @InvoiceDateTo date = null,
     @CustomerName nvarchar(100) = null,
     @DeliveryMethodID int = null,
-    @MinInvoiceAmount decimal(18,2) = null,
-    @MaxInvoiceAmount decimal(18,2) = null,
+    @MinInvoiceAmount decimal(18, 2) = null,
+    @MaxInvoiceAmount decimal(18, 2) = null,
     @PageNumber int = 1,
     @PageSize int = 10,
     @TotalCount int = 0 output
