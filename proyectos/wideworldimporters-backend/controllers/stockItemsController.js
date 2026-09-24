@@ -3,12 +3,9 @@ import { getStockItems } from '../services/stockItems.js'
 
 /**
  * Obtiene una página de productos.
+ * Permite filtrar opcionalmente por nombre de producto y grupo.
  *
- * Valida los parámetros de paginación recibidos por query string
- * (pageNumber y pageSize), llama al servicio y devuelve la
- * respuesta paginada con metadatos (total de registros y total de páginas).
- *
- * @param {import('express').Request} req Petición HTTP. Espera pageNumber y pageSize en req.query.
+ * @param {import('express').Request} req Petición HTTP. Espera pageNumber, pageSize, stockItemName y stockGroupID en req.query.
  * @param {import('express').Response} res Respuesta HTTP.
  * @returns {Promise<import('express').Response>} Respuesta JSON con la página de productos.
  */
@@ -22,7 +19,9 @@ export async function listStockItems(req, res) {
         if (pageSize > 100) {
             return res.status(400).json({message: 'pageSize no puede ser mayor a 100'})
         }
-        const result = await getStockItems(pageNumber, pageSize)
+        const stockItemName = req.query.stockItemName
+        const stockGroupID = req.query.stockGroupID
+        const result = await getStockItems(stockItemName, stockGroupID, pageNumber, pageSize)
         return paginatedResponse(res, pageNumber, pageSize, result)
     } catch (error) {
         res.status(500).json({message: 'Error al obtener productos'})

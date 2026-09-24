@@ -5,9 +5,9 @@ import { listStockItems } from '../controllers/stockItemsController.js'
 const router = Router()
 
 /**
- * GET /stockItems
- * Devuelve una página de Productos paginada.
- * Query params: pageNumber y pageSize
+ * GET /stock-items
+ * Devuelve una página de productos paginada.
+ * Query params: pageNumber, pageSize, stockItemName, stockGroupID
  */
 router.get('/stockItems', listStockItems)
 
