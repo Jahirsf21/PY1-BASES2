@@ -420,13 +420,36 @@ go
     Devuelve: NumeroFactura, FechaFactura, NombreCliente, NombreMetodoEntrega, MontoFacturado
 */
 create procedure Sales.GetInvoices
+    @InvoiceID int = null,
+    @InvoiceDateFrom date = null,
+    @InvoiceDateTo date = null,
+    @CustomerName nvarchar(100) = null,
+    @DeliveryMethodID int = null,
+    @MinInvoiceAmount decimal(18,2) = null,
+    @MaxInvoiceAmount decimal(18,2) = null,
     @PageNumber int = 1,
     @PageSize int = 10,
     @TotalCount int = 0 output
 as
     begin
         set nocount on
-        select @TotalCount = count(*) from Invoices
+        select @TotalCount = count(*)
+        from (
+            select iv.InvoiceID
+            from Invoices iv
+            inner join Customers cs on iv.CustomerID = cs.CustomerID
+            inner join DeliveryMethods dv on iv.DeliveryMethodID = dv.DeliveryMethodID
+            inner join InvoiceLines ivl on iv.InvoiceID = ivl.InvoiceID
+            where (@InvoiceID is null or iv.InvoiceID = @InvoiceID)
+              and (@InvoiceDateFrom  is null or iv.InvoiceDate >= @InvoiceDateFrom)
+              and (@InvoiceDateTo is null or iv.InvoiceDate < dateadd(day, 1, @InvoiceDateTo))
+              and (@CustomerName  is null or cs.CustomerName like '%' + @CustomerName + '%')
+              and (@DeliveryMethodID is null or iv.DeliveryMethodID = @DeliveryMethodID)
+            group by iv.InvoiceID
+            having (@MinInvoiceAmount is null or sum(ivl.ExtendedPrice) >= @MinInvoiceAmount)
+               and (@MaxInvoiceAmount is null or sum(ivl.ExtendedPrice) <= @MaxInvoiceAmount)
+        ) t
+
         select
             iv.InvoiceID as NumeroFactura,
             iv.InvoiceDate as FechaFactura,
@@ -437,7 +460,14 @@ as
         inner join Customers cs on iv.CustomerID = cs.CustomerID
         inner join DeliveryMethods dv on iv.DeliveryMethodID = dv.DeliveryMethodID
         inner join InvoiceLines ivl on iv.InvoiceID = ivl.InvoiceID
+        where (@InvoiceID is null or iv.InvoiceID = @InvoiceID)
+            and (@InvoiceDateFrom  is null or iv.InvoiceDate >= @InvoiceDateFrom)
+            and (@InvoiceDateTo is null or iv.InvoiceDate < dateadd(day, 1, @InvoiceDateTo))
+            and (@CustomerName  is null or cs.CustomerName like '%' + @CustomerName + '%')
+            and (@DeliveryMethodID is null or iv.DeliveryMethodID = @DeliveryMethodID)
         group by iv.InvoiceID, iv.InvoiceDate, cs.CustomerName, dv.DeliveryMethodName
+        having (@MinInvoiceAmount is null or sum(ivl.ExtendedPrice) >= @MinInvoiceAmount)
+            and (@MaxInvoiceAmount is null or sum(ivl.ExtendedPrice) <= @MaxInvoiceAmount)
         order by iv.InvoiceID
         offset(@PageNumber - 1) * @PageSize rows
         fetch next @PageSize rows only
