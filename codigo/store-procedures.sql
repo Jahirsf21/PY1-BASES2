@@ -30,7 +30,6 @@
     CREATE SYNONYM StateProvinces FOR Application.StateProvinces
 */
 
-
 /*
     Obtiene los clientes paginados, ordenados por identificador.
     Incluye el total de registros (TotalCount) para calcular la paginación en el cliente.
@@ -99,7 +98,6 @@ as
     end
 go
 
-
 /*
     Obtiene el detalle general de un cliente:
     nombre, categoría, buying group, cliente por facturar, método de entrega, días de gracia, sitio web.
@@ -153,7 +151,6 @@ as
     end
 go
 
-
 /*
     Obtiene las direcciones de entrega y postal de un cliente,
     junto con su ubicación geográfica (latitud/longitud) para el mapa.
@@ -189,7 +186,6 @@ as
         where cs.CustomerID = @CustomerID
     end
 go
-
 
 /*
     Obtiene todas las categorías de cliente ordenadas por su ID.
@@ -308,8 +304,6 @@ as
         fetch next @PageSize rows only
     end
 go
-
-
 
 /*
     Obtiene los proveedores paginados, ordenados por identificador.
