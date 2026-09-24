@@ -1,14 +1,20 @@
 import { Router } from 'express'
-import { listStockItems } from '../controllers/stockItemsController.js'
+import { listStockItems, listStockGroups } from '../controllers/stockItemsController.js'
 
 // Rutas de Productos.
 const router = Router()
 
 /**
- * GET /stockItems
- * Devuelve una página de Productos paginada.
- * Query params: pageNumber y pageSize
+ * GET /stock-items
+ * Devuelve una página de productos paginada.
+ * Query params: pageNumber, pageSize, stockItemName, stockGroupID
  */
-router.get('/stockItems', listStockItems)
+router.get('/stock-items', listStockItems)
+
+/**
+ * GET /stock-items/groups
+ * Devuelve todos los grupos de productos para el combo de filtros.
+ */
+router.get('/stock-items/groups', listStockGroups)
 
 export default router
