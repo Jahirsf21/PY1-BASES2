@@ -35,7 +35,7 @@
     Incluye el total de registros (TotalCount) para calcular la paginación en el cliente.
     Devuelve: CustomerID, NombreCliente, NombreCategoriaCliente, NombreMetodoEntrega
 */
-create procedure Sales.GetCustomers
+create or alter procedure Sales.GetCustomers
     @CustomerName nvarchar(100) = null,
     @CustomerCategoryID int = null,
     @DeliveryMethodID int = null,
@@ -77,7 +77,7 @@ go
     Incluye el total de registros (TotalCount) para calcular la paginación en el cliente.
     Devuelve: CustomerID, NombreCliente
 */
-create procedure Sales.GetBillToCustomers
+create or alter procedure Sales.GetBillToCustomers
     @CustomerName nvarchar(100) = null,
     @PageNumber int = 1,
     @PageSize int = 10,
@@ -100,10 +100,10 @@ go
 
 /*
     Obtiene el detalle general de un cliente:
-    nombre, categoría, buying group, cliente por facturar, método de entrega, días de gracia, sitio web.
-    Devuelve: CustomerID, NombreCliente, NombreCategoriaCliente, NombreGrupoCompra, NombreClientePorFacturar, NombreMetodoEntrega, DiasGraciaPago, SitioWeb
+    nombre, categoría, buying group, ID del cliente por facturar, método de entrega, días de gracia, sitio web.
+    Devuelve: CustomerID, NombreCliente, NombreCategoriaCliente, NombreGrupoCompra, BillToCustomerID, NombreMetodoEntrega, DiasGraciaPago, SitioWeb
 */
-create procedure Sales.GetCustomerDetail
+create or alter procedure Sales.GetCustomerDetail
     @CustomerID int
 as  
     begin
@@ -113,7 +113,7 @@ as
             cs.CustomerName as NombreCliente,
             cg.CustomerCategoryName as NombreCategoriaCliente,
             bg.BuyingGroupName as NombreGrupoCompra,
-            bill.CustomerName as NombreClientePorFacturar,
+            cs.BillToCustomerID,
             dv.DeliveryMethodName as NombreMetodoEntrega,
             cs.PaymentDays as DiasGraciaPago,
             cs.WebSiteURL as SitioWeb
@@ -121,7 +121,6 @@ as
         inner join CustomerCategories cg on cs.CustomerCategoryID = cg.CustomerCategoryID
         left join BuyingGroups bg on cs.BuyingGroupID = bg.BuyingGroupID
         inner join DeliveryMethods dv on cs.DeliveryMethodID = dv.DeliveryMethodID
-        inner join Customers bill on bill.CustomerID = cs.BillToCustomerID
         where cs.CustomerID = @CustomerID
     end
 go
@@ -130,7 +129,7 @@ go
     Obtiene los contactos (principal y alternativo) de un cliente específico.
     Devuelve: una fila con el nombre, teléfono, fax y correo de ambos contactos.
 */
-create procedure Sales.GetCustomerContacts
+create or alter procedure Sales.GetCustomerContacts
     @CustomerID int
 as 
     begin
@@ -156,7 +155,7 @@ go
     junto con su ubicación geográfica (latitud/longitud) para el mapa.
     Devuelve: una fila con ambas direcciones y las coordenadas.
 */
-create procedure Sales.GetCustomerAddress
+create or alter procedure Sales.GetCustomerAddress
     @CustomerID int
 as
     begin
@@ -191,7 +190,7 @@ go
     Obtiene todas las categorías de cliente ordenadas por su ID.
     Devuelve: CustomerCategoryID, NombreCategoria
 */
-create procedure Sales.GetCustomerCategories
+create or alter procedure Sales.GetCustomerCategories
 as
     begin
         set nocount on
@@ -208,7 +207,7 @@ go
     ordenadas por su identificador.
     Devuelve: BuyingGroupID, NombreGrupoCompra
 */
-create procedure Sales.GetBuyingGroups
+create or alter procedure Sales.GetBuyingGroups
 as
     begin
         set nocount on
@@ -224,7 +223,7 @@ go
     Obtiene todos los métodos de entrega ordenados por su identificador.
     Devuelve: DeliveryMethodID, NombreMetodoEntrega
 */
-create procedure Application.GetDeliveryMethods
+create or alter procedure Application.GetDeliveryMethods
 as
     begin
         set nocount on
@@ -242,7 +241,7 @@ go
     Incluye el total de registros (TotalCount) para calcular la paginación en el cliente.
     Devuelve: PersonID, NombreCompleto
 */
-create procedure Application.GetPeople
+create or alter procedure Application.GetPeople
     @FullName nvarchar(100) = null,
     @PageNumber int = 1,
     @PageSize int = 10,
@@ -270,7 +269,7 @@ go
     Incluye el total de registros (TotalCount) para calcular la paginación en el cliente.
     Devuelve: CityID, NombreCiudad, Provincia, NombrePais
 */
-create procedure Application.GetCities
+create or alter procedure Application.GetCities
     @CityName nvarchar(100) = null,
     @ProvinceName nvarchar(100) = null,
     @CountryName nvarchar(100) = null,
@@ -310,7 +309,7 @@ go
     Incluye el total de registros (TotalCount) para calcular la paginación en el cliente.
     Devuelve: SupplierID, NombreProveedor, NombreCategoriaProveedor, NombreMetodoEntrega
 */ 
-create procedure Purchasing.GetSuppliers
+create or alter procedure Purchasing.GetSuppliers
     @SupplierName nvarchar(100) = null,
     @SupplierCategoryID int = null,
     @DeliveryMethodID int = null,
@@ -349,7 +348,7 @@ go
     Obtiene todas las categorías de proveedor ordenadas por su ID.
     Devuelve: SupplierCategoryID, NombreCategoriaProveedor
 */
-create procedure Purchasing.GetSupplierCategories
+create or alter procedure Purchasing.GetSupplierCategories
 as
     begin
         set nocount on
@@ -368,7 +367,7 @@ go
     Incluye el total de registros (TotalCount) para calcular la paginación en el cliente.
     Devuelve: StockItemID, NombreProducto, NombreGrupoProducto, CantidadTotalEnInventarios
 */
-create procedure Warehouse.GetStockItems
+create or alter procedure Warehouse.GetStockItems
     @StockItemName nvarchar(100) = null,
     @StockGroupID int = null,
     @PageNumber int = 1,
@@ -412,7 +411,7 @@ go
     Obtiene todos los grupos de productos ordenados por su identificador.
     Devuelve: StockGroupID, NombreGrupoProducto
 */
-create procedure Warehouse.GetStockGroups
+create or alter procedure Warehouse.GetStockGroups
 as
     begin
         set nocount on
@@ -429,7 +428,7 @@ go
     Incluye el total de registros (TotalCount) para calcular la paginación en el cliente.
     Devuelve: NumeroFactura, FechaFactura, NombreCliente, NombreMetodoEntrega, MontoFacturado
 */
-create procedure Sales.GetInvoices
+create or alter procedure Sales.GetInvoices
     @InvoiceID int = null,
     @InvoiceDateFrom date = null,
     @InvoiceDateTo date = null,
