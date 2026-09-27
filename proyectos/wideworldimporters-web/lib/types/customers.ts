@@ -39,7 +39,7 @@ export interface CustomerDetail {
   NombreCliente: string
   NombreCategoriaCliente: string
   NombreGrupoCompra: string | null
-  NombreClientePorFacturar: string
+  BillToCustomerID: number
   NombreMetodoEntrega: string
   DiasGraciaPago: number
   SitioWeb: string | null
@@ -71,8 +71,8 @@ export interface CustomerAddress {
   ProvinciaPostal: string
   PaisPostal: string
   CodigoPostalPostal: string
-  Latitud: number | null
-  Longitud: number | null
+  Latitud: number
+  Longitud: number
 }
 
 /** Filtros disponibles para consultar el listado de clientes. */
@@ -80,6 +80,11 @@ export interface CustomerFilters {
   customerName: string
   customerCategoryID: number | null
   deliveryMethodID: number | null
+}
+
+/** Parámetro de la ruta de detalle de un cliente. */
+export interface CustomerRouteParams extends Record<string, string | string[]> {
+  customerID: string
 }
 
 /** Respuesta paginada del listado principal de clientes. */

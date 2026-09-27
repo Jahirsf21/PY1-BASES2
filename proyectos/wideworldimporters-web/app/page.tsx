@@ -2,6 +2,7 @@
 
 import type { SubmitEvent } from 'react'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, RotateCcwIcon, SearchIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -221,6 +222,16 @@ export default function Home() {
                           <dd className="break-words">{customer.NombreMetodoEntrega}</dd>
                         </div>
                       </dl>
+                      <div className="flex justify-end">
+                        <Button
+                          nativeButton={false}
+                          render={<Link href={`/customers/${customer.CustomerID}`} />}
+                          variant="outline"
+                          size="sm"
+                        >
+                          Ver detalle
+                        </Button>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -228,15 +239,17 @@ export default function Home() {
                 <div className="hidden md:block">
                   <Table className="min-w-[640px] table-fixed">
                     <colgroup>
-                      <col className="w-[45%]" />
-                      <col className="w-[30%]" />
-                      <col className="w-[25%]" />
+                      <col className="w-[35%]" />
+                      <col className="w-[23%]" />
+                      <col className="w-[22%]" />
+                      <col className="w-[20%]" />
                     </colgroup>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Nombre</TableHead>
                         <TableHead>Categoría</TableHead>
                         <TableHead>Método de entrega</TableHead>
+                        <TableHead>Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -250,6 +263,16 @@ export default function Home() {
                           </TableCell>
                           <TableCell className="truncate" title={customer.NombreMetodoEntrega}>
                             {customer.NombreMetodoEntrega}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              nativeButton={false}
+                              render={<Link href={`/customers/${customer.CustomerID}`} />}
+                              variant="outline"
+                              size="sm"
+                            >
+                              Ver detalle
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
