@@ -51,7 +51,7 @@ export async function getBillToCustomers(customerName, pageNumber, pageSize) {
 
 /**
  * Obtiene el detalle general de un cliente por su identificador.
- * Incluye nombre, categoría, grupo de compra, cliente por facturar,
+ * Incluye nombre, categoría, grupo de compra, ID del cliente por facturar,
  * método de entrega, días de gracia y sitio web.
  *
  * @param {number} customerID Identificador del cliente.
