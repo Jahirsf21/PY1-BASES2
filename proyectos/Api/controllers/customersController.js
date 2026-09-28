@@ -1,5 +1,5 @@
 import { paginatedResponse } from '../helpers/paginatedResponse.js'
-import { getBillToCustomers, getBuyingGroups, getCustomerAddress, getCustomerCategories, getCustomerContacts, getCustomerDetail, getCustomers } from '../services/customers.js'
+import { getBillToCustomers, getBuyingGroups, getCustomerAddress, getCustomerCategories, getCustomerContacts, getCustomerDetail, getCustomers, insertCustomer, deleteCustomer, updateCustomer } from '../services/customers.js'
 
 /**
  * Obtiene una página de clientes.
@@ -150,5 +150,170 @@ export async function getCustomerAddressById(req, res) {
         return res.json(address)
     } catch (error) {
         res.status(500).json({message: 'Error al obtener la dirección del cliente'})
+    }
+}
+
+/**
+ * Crea un cliente con los datos del cuerpo de la solicitud.
+ * Devuelve 201 con el identificador creado o 400 si faltan campos obligatorios.
+ *
+ * @param {import('express').Request} req Petición HTTP con los datos del cliente en req.body.
+ * @param {import('express').Response} res Respuesta HTTP.
+ * @returns {Promise<import('express').Response>} Respuesta con el CustomerID creado.
+ */
+export async function addCustomer(req, res) {
+    const customer = req.body
+    if (!customer || typeof customer !== 'object' || Array.isArray(customer)) {
+        return res.status(400).json({message: 'El cuerpo de la solicitud debe contener los datos del cliente'})
+    }
+    const requiredFields = [
+        'customerName', 'customerCategoryID', 'billToCustomerID', 'lastEditedBy',
+        'primaryContactPersonID', 'deliveryMethodID', 'paymentDays', 'phoneNumber',
+        'deliveryAddressLine1', 'deliveryCityID', 'deliveryPostalCode',
+        'postalAddressLine1', 'postalCityID', 'postalPostalCode',
+    ]
+    const missingFields = requiredFields.filter((field) => {
+        const value = customer[field]
+        return value === undefined || value === null || (typeof value === 'string' && value.trim() === '')
+    })
+    if (missingFields.length > 0) {
+        return res.status(400).json({
+            message: 'Faltan campos obligatorios para crear el cliente',
+            fields: missingFields,
+        })
+    }
+    try {
+        const customerID = await insertCustomer(
+            customer.customerName,
+            customer.customerCategoryID,
+            customer.billToCustomerID,
+            customer.lastEditedBy,
+            customer.standardDiscountPercentage ?? 0,
+            customer.creditLimit ?? null,
+            customer.isStatementSent ?? false,
+            customer.isOnCreditHold ?? false,
+            customer.buyingGroupID ?? null,
+            customer.primaryContactPersonID,
+            customer.alternateContactPersonID ?? null,
+            customer.deliveryMethodID,
+            customer.paymentDays,
+            customer.phoneNumber,
+            customer.faxNumber ?? null,
+            customer.websiteURL ?? null,
+            customer.deliveryAddressLine1,
+            customer.deliveryAddressLine2 ?? null,
+            customer.deliveryCityID,
+            customer.deliveryPostalCode,
+            customer.postalAddressLine1,
+            customer.postalAddressLine2 ?? null,
+            customer.postalCityID,
+            customer.postalPostalCode,
+            customer.latitude ?? null,
+            customer.longitude ?? null,
+        )
+        return res.status(201).json(customerID)
+    } catch (error) {
+        const sqlErrorCode = Number(error.number)
+        if (sqlErrorCode === 51002) {
+            return res.status(400).json({message: 'LastEditedBy no corresponde a un empleado válido.'})
+        }
+        return res.status(500).json({message: 'Error al crear el cliente'})
+    }
+}
+
+/**
+ * Elimina un cliente por su identificador.
+ * Devuelve 404 si no existe y 409 si tiene registros asociados.
+ *
+ * @param {import('express').Request} req Petición HTTP con customerID en req.params.
+ * @param {import('express').Response} res Respuesta HTTP.
+ * @returns {Promise<import('express').Response>} Respuesta sin contenido al eliminarlo.
+ */
+export async function removeCustomer(req, res) {
+    const {customerID: id} = req.params
+    const customerID = Number(id)
+    try {
+        await deleteCustomer(customerID)
+        return res.status(204).send()
+    } catch (error) {
+        const sqlErrorCode = Number(error.number)
+        if (sqlErrorCode === 51000) {
+            return res.status(404).json({message: 'El cliente indicado no existe.'})
+        }
+        if (sqlErrorCode === 51001) {
+            return res.status(409).json({message: 'No se puede eliminar el cliente porque tiene facturas u otros registros asociados.'})
+        }
+        return res.status(500).json({message: 'Error al eliminar el cliente'})
+    }
+}
+
+/**
+ * Actualiza completamente los datos de un cliente.
+ * Devuelve 400 ante datos inválidos, 404 si no existe y 200 al actualizarlo.
+ *
+ * @param {import('express').Request} req Petición con customerID en la ruta y datos en req.body.
+ * @param {import('express').Response} res Respuesta HTTP.
+ * @returns {Promise<import('express').Response>} Confirmación de la actualización.
+ */
+export async function editCustomer(req, res) {
+    const {customerID: id} = req.params
+    const customerID = Number(id)
+    const customer = req.body
+    if (!customer || typeof customer !== 'object' || Array.isArray(customer)) {
+        return res.status(400).json({message: 'El cuerpo de la solicitud debe contener los datos del cliente'})
+    }
+    const requiredFields = [
+        'customerName', 'customerCategoryID', 'billToCustomerID', 'lastEditedBy',
+        'primaryContactPersonID', 'deliveryMethodID', 'paymentDays', 'phoneNumber',
+        'deliveryAddressLine1', 'deliveryCityID', 'deliveryPostalCode',
+        'postalAddressLine1', 'postalCityID', 'postalPostalCode',
+    ]
+    const missingFields = requiredFields.filter((field) => {
+        const value = customer[field]
+        return value === undefined || value === null || (typeof value === 'string' && value.trim() === '')
+    })
+    if (missingFields.length > 0) {
+        return res.status(400).json({message: 'Faltan campos obligatorios para actualizar el cliente', fields: missingFields})
+    }
+    try {
+        await updateCustomer(
+            customerID,
+            customer.customerName,
+            customer.customerCategoryID,
+            customer.billToCustomerID,
+            customer.lastEditedBy,
+            customer.standardDiscountPercentage ?? 0,
+            customer.creditLimit ?? null,
+            customer.isStatementSent ?? false,
+            customer.isOnCreditHold ?? false,
+            customer.buyingGroupID ?? null,
+            customer.primaryContactPersonID,
+            customer.alternateContactPersonID ?? null,
+            customer.deliveryMethodID,
+            customer.paymentDays,
+            customer.phoneNumber,
+            customer.faxNumber ?? null,
+            customer.websiteURL ?? null,
+            customer.deliveryAddressLine1,
+            customer.deliveryAddressLine2 ?? null,
+            customer.deliveryCityID,
+            customer.deliveryPostalCode,
+            customer.postalAddressLine1,
+            customer.postalAddressLine2 ?? null,
+            customer.postalCityID,
+            customer.postalPostalCode,
+            customer.latitude ?? null,
+            customer.longitude ?? null,
+        )
+        return res.status(200).json({customerID})
+    } catch (error) {
+        const sqlErrorCode = Number(error.number)
+        if (sqlErrorCode === 51000) {
+            return res.status(404).json({message: 'El cliente indicado no existe.'})
+        }
+        if (sqlErrorCode === 51002) {
+            return res.status(400).json({message: 'LastEditedBy no corresponde a un empleado válido.'})
+        }
+        return res.status(500).json({message: 'Error al actualizar el cliente'})
     }
 }

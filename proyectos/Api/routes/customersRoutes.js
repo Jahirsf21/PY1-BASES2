@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { listCustomers, listBillToCustomers, listCustomerCategories, listBuyingGroups, getCustomerById, getCustomerContactsById, getCustomerAddressById } from '../controllers/customersController.js'
+import { listCustomers, listBillToCustomers, listCustomerCategories, listBuyingGroups, getCustomerById, getCustomerContactsById, getCustomerAddressById, addCustomer, removeCustomer, editCustomer } from '../controllers/customersController.js'
 
 // Rutas de Clientes.
 const router = Router()
@@ -10,6 +10,13 @@ const router = Router()
  * Query params: pageNumber, pageSize, customerName, customerCategoryID, deliveryMethodID
  */
 router.get('/customers', listCustomers)
+
+/**
+ * POST /customers
+ * Crea un cliente y devuelve su identificador.
+ * Body: datos del cliente requeridos por Sales.InsertCustomer.
+ */
+router.post('/customers', addCustomer)
 
 /**
  * GET /customers/bill-to
@@ -36,6 +43,20 @@ router.get('/customers/buying-groups', listBuyingGroups)
  * Path param: customerID
  */
 router.get('/customers/:customerID', getCustomerById)
+
+/**
+ * PUT /customers/:customerID
+ * Actualiza todos los datos editables de un cliente.
+ * Path param: customerID. Body: campos requeridos por Sales.UpdateCustomer.
+ */
+router.put('/customers/:customerID', editCustomer)
+
+/**
+ * DELETE /customers/:customerID
+ * Elimina un cliente si no tiene registros asociados.
+ * Path param: customerID
+ */
+router.delete('/customers/:customerID', removeCustomer)
 
 /**
  * GET /customers/:customerID/contacts
