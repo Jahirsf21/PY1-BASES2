@@ -91,7 +91,7 @@ export async function listBuyingGroups(req, res) {
 
 /**
  * Obtiene el detalle general de un cliente por su identificador.
- * Incluye nombre, categoría, grupo de compra, ID del cliente por facturar,
+ * Incluye nombre, categoría, grupo de compra, nombre del cliente por facturar,
  * método de entrega, días de gracia y sitio web.
  *
  * @param {import('express').Request} req Petición HTTP. Espera customerID en req.params.
