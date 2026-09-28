@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently -n front,back -c cyan,green \"pnpm --dir wideworldimporters-web run dev\" \"pnpm --dir wideworldimporters-backend exec node server.js\""
+    "dev": "concurrently -n WebSite,Api -c cyan,green \"pnpm --dir WebSite run dev\" \"pnpm --dir Api exec node server.js\""
   },
   "keywords": [],
   "author": "",
