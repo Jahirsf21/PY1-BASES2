@@ -100,8 +100,8 @@ go
 
 /*
     Obtiene el detalle general de un cliente:
-    nombre, categoría, buying group, ID del cliente por facturar, método de entrega, días de gracia, sitio web.
-    Devuelve: CustomerID, NombreCliente, NombreCategoriaCliente, NombreGrupoCompra, BillToCustomerID, NombreMetodoEntrega, DiasGraciaPago, SitioWeb
+    nombre, categoría, buying group, cliente por facturar, método de entrega, días de gracia, sitio web.
+    Devuelve: CustomerID, NombreCliente, NombreCategoriaCliente, NombreGrupoCompra, NombreClientePorFacturar, NombreMetodoEntrega, DiasGraciaPago, SitioWeb
 */
 create or alter procedure Sales.GetCustomerDetail
     @CustomerID int
@@ -113,7 +113,7 @@ as
             cs.CustomerName as NombreCliente,
             cg.CustomerCategoryName as NombreCategoriaCliente,
             bg.BuyingGroupName as NombreGrupoCompra,
-            cs.BillToCustomerID,
+            bill.CustomerName as NombreClientePorFacturar,
             dv.DeliveryMethodName as NombreMetodoEntrega,
             cs.PaymentDays as DiasGraciaPago,
             cs.WebSiteURL as SitioWeb
@@ -121,6 +121,7 @@ as
         inner join CustomerCategories cg on cs.CustomerCategoryID = cg.CustomerCategoryID
         left join BuyingGroups bg on cs.BuyingGroupID = bg.BuyingGroupID
         inner join DeliveryMethods dv on cs.DeliveryMethodID = dv.DeliveryMethodID
+        inner join Customers bill on bill.CustomerID = cs.BillToCustomerID
         where cs.CustomerID = @CustomerID
     end
 go
