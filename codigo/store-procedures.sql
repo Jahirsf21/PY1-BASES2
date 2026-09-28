@@ -1,35 +1,81 @@
-/*
-    Sinonimos
-    CREATE SYNONYM Customers FOR Sales.Customers
-    CREATE SYNONYM CustomerCategories FOR Sales.CustomerCategories
-    CREATE SYNONYM CustomerTransactions FOR Sales.CustomerTransactions
-    
-    CREATE SYNONYM BuyingGroups FOR Sales.BuyingGroups
+use WideWorldImporters;
+go
+if db_name() <> N'WideWorldImporters' throw 50000, N'Base incorrecta', 1;
+go
 
-    CREATE SYNONYM DeliveryMethods FOR Application.DeliveryMethods
+-- ======================================================================================
+-- Sinonimos 
+-- ======================================================================================
+drop synonym if exists dbo.Customers;
+create synonym dbo.Customers for Sales.Customers;
+go
+drop synonym if exists dbo.CustomerCategories;
+create synonym dbo.CustomerCategories for Sales.CustomerCategories;
+go
+drop synonym if exists dbo.CustomerTransactions;
+create synonym dbo.CustomerTransactions for Sales.CustomerTransactions;
+go
+drop synonym if exists dbo.BuyingGroups;
+create synonym dbo.BuyingGroups for Sales.BuyingGroups;
+go
+drop synonym if exists dbo.DeliveryMethods;
+create synonym dbo.DeliveryMethods for Application.DeliveryMethods;
+go
+drop synonym if exists dbo.Suppliers;
+create synonym dbo.Suppliers for Purchasing.Suppliers;
+go
+drop synonym if exists dbo.SupplierCategories;
+create synonym dbo.SupplierCategories for Purchasing.SupplierCategories;
+go
+drop synonym if exists dbo.StockItems;
+create synonym dbo.StockItems for Warehouse.StockItems;
+go
+drop synonym if exists dbo.StockItemTransactions;
+create synonym dbo.StockItemTransactions for Warehouse.StockItemTransactions;
+go
+drop synonym if exists dbo.StockItemHoldings;
+create synonym dbo.StockItemHoldings for Warehouse.StockItemHoldings;
+go
+drop synonym if exists dbo.StockItemStockGroups;
+create synonym dbo.StockItemStockGroups for Warehouse.StockItemStockGroups;
+go
+drop synonym if exists dbo.StockGroups;
+create synonym dbo.StockGroups for Warehouse.StockGroups;
+go
+drop synonym if exists dbo.Colors;
+create synonym dbo.Colors for Warehouse.Colors;
+go
+drop synonym if exists dbo.PackageTypes;
+create synonym dbo.PackageTypes for Warehouse.PackageTypes;
+go
+drop synonym if exists dbo.Orders;
+create synonym dbo.Orders for Sales.Orders;
+go
+drop synonym if exists dbo.OrderLines;
+create synonym dbo.OrderLines for Sales.OrderLines;
+go
+drop synonym if exists dbo.Invoices;
+create synonym dbo.Invoices for Sales.Invoices;
+go
+drop synonym if exists dbo.InvoiceLines;
+create synonym dbo.InvoiceLines for Sales.InvoiceLines;
+go
+drop synonym if exists dbo.People;
+create synonym dbo.People for Application.People;
+go
+drop synonym if exists dbo.Cities;
+create synonym dbo.Cities for Application.Cities;
+go
+drop synonym if exists dbo.Countries;
+create synonym dbo.Countries for Application.Countries;
+go
+drop synonym if exists dbo.StateProvinces;
+create synonym dbo.StateProvinces for Application.StateProvinces;
+go
 
-    CREATE SYNONYM Suppliers FOR Purchasing.Suppliers
-    CREATE SYNONYM SupplierCategories FOR Purchasing.SupplierCategories
-
-    CREATE SYNONYM StockItems FOR Warehouse.StockItems
-    CREATE SYNONYM StockItemTransactions FOR Warehouse.StockItemTransactions
-    CREATE SYNONYM StockItemHoldings FOR Warehouse.StockItemHoldings
-    CREATE SYNONYM StockItemStockGroups FOR Warehouse.StockItemStockGroups
-    CREATE SYNONYM StockGroups FOR Warehouse.StockGroups
-
-    CREATE SYNONYM Orders FOR Sales.Orders
-    CREATE SYNONYM OrderLines FOR Sales.OrderLines
-
-    CREATE SYNONYM Invoices FOR Sales.Invoices
-    CREATE SYNONYM InvoiceLines FOR Sales.InvoiceLines
-
-    CREATE SYNONYM People FOR Application.People
-
-    CREATE SYNONYM Cities FOR Application.Cities
-    CREATE SYNONYM Countries FOR Application.Countries
-    CREATE SYNONYM StateProvinces FOR Application.StateProvinces
-*/
-
+-- ======================================================================================
+-- Módulo de clientes 
+-- ======================================================================================
 /*
     Obtiene los clientes paginados, ordenados por identificador.
     Incluye el total de registros (TotalCount) para calcular la paginación en el cliente.
@@ -302,6 +348,194 @@ as
         order by ci.CityID
         offset(@PageNumber - 1) * @PageSize rows
         fetch next @PageSize rows only
+    end
+go
+
+-- ======================================================================================
+-- CRUD de clientes 
+-- ======================================================================================
+/*
+    Inserta un nuevo cliente en la tabla Customers. Recibe todos los datos obligatorios y opcionales del cliente, 
+    maneja valores por defecto (fecha de apertura de cuenta, fax, web, ubicación geográfica), y devuelve el CustomerID 
+    generado a través del parámetro de salida @NewCustomerID
+*/
+create or alter procedure Sales.InsertCustomer
+    @CustomerName nvarchar(100),
+    @CustomerCategoryID int,
+    @BillToCustomerID int,
+    @LastEditedBy int,
+    @AccountOpenedDate date = null,
+    @StandardDiscountPercentage decimal(18,3) = 0,
+    @IsStatementSent bit = 0,
+    @IsOnCreditHold bit = 0,
+    @BuyingGroupID int = null,
+    @PrimaryContactPersonID int,
+    @AlternateContactPersonID int = null,
+    @DeliveryMethodID int,
+    @PaymentDays int,
+    @PhoneNumber nvarchar(20),
+    @FaxNumber nvarchar(20) = null,
+    @WebsiteURL nvarchar(256) = null,
+    @DeliveryAddressLine1 nvarchar(60),
+    @DeliveryAddressLine2 nvarchar(60) = null,
+    @DeliveryCityID int,
+    @DeliveryPostalCode nvarchar(10),
+    @PostalAddressLine1 nvarchar(60),
+    @PostalAddressLine2 nvarchar(60) = null,
+    @PostalCityID int,
+    @PostalPostalCode nvarchar(10),
+    @Latitude float = null,
+    @Longitude float = null,
+    @NewCustomerID int output
+as
+    begin
+        set nocount on
+        begin try
+            begin transaction
+                declare @InsertedIDs table (CustomerID int)
+
+                insert into Customers (
+                    CustomerName, BillToCustomerID, CustomerCategoryID, BuyingGroupID,
+                    PrimaryContactPersonID, AlternateContactPersonID, DeliveryMethodID,
+                    AccountOpenedDate, StandardDiscountPercentage, IsStatementSent, IsOnCreditHold,
+                    PaymentDays, PhoneNumber, FaxNumber, WebsiteURL,
+                    DeliveryAddressLine1, DeliveryAddressLine2, DeliveryCityID, DeliveryPostalCode,
+                    PostalAddressLine1, PostalAddressLine2, PostalCityID, PostalPostalCode,
+                    DeliveryLocation, LastEditedBy
+                )
+                output inserted.CustomerID into @InsertedIDs
+                values (
+                    @CustomerName, @BillToCustomerID, @CustomerCategoryID, @BuyingGroupID,
+                    @PrimaryContactPersonID, @AlternateContactPersonID, @DeliveryMethodID,
+                    coalesce(@AccountOpenedDate, convert(date, sysdatetime())),
+                    @StandardDiscountPercentage, @IsStatementSent, @IsOnCreditHold,
+                    @PaymentDays, @PhoneNumber, coalesce(@FaxNumber,N''), coalesce(@WebsiteURL,N''),
+                    @DeliveryAddressLine1, @DeliveryAddressLine2, @DeliveryCityID, @DeliveryPostalCode,
+                    @PostalAddressLine1, @PostalAddressLine2, @PostalCityID, @PostalPostalCode,
+                    case when @Latitude is not null and @Longitude is not null
+                         then geography::Point(@Latitude, @Longitude, 4326)
+                         else null end, @LastEditedBy
+                )
+
+                select @NewCustomerID = CustomerID from @InsertedIDs
+            commit transaction
+            print 'Cliente insertado correctamente. Nuevo CustomerID = '  + cast(@NewCustomerID as varchar(20)) + ' (' + @CustomerName + ')';
+        end try
+        begin catch
+            if @@trancount > 0
+                rollback transaction;
+            ;throw;
+        end catch
+    end
+go
+
+/*
+    Actualiza la información de un cliente existente. Recibe el @CustomerID y todos los campos editables. 
+    Si el cliente no existe, lanza un error personalizado (51000). La columna DeliveryLocation solo se actualiza 
+    si se envían latitud y longitud; de lo contrario, conserva el valor previo.
+*/
+create or alter procedure Sales.UpdateCustomer
+    @CustomerID int,
+    @CustomerName nvarchar(100),
+    @CustomerCategoryID int,
+    @BillToCustomerID int,
+    @LastEditedBy int,
+    @AccountOpenedDate date = null,
+    @StandardDiscountPercentage decimal(18,3) = 0,
+    @IsStatementSent bit = 0,
+    @IsOnCreditHold bit = 0,
+    @BuyingGroupID int = null,
+    @PrimaryContactPersonID int,
+    @AlternateContactPersonID int = null,
+    @DeliveryMethodID int,
+    @PaymentDays int,
+    @PhoneNumber nvarchar(20),
+    @FaxNumber nvarchar(20) = null,
+    @WebsiteURL nvarchar(256) = null,
+    @DeliveryAddressLine1 nvarchar(60),
+    @DeliveryAddressLine2 nvarchar(60) = null,
+    @DeliveryCityID int,
+    @DeliveryPostalCode nvarchar(10),
+    @PostalAddressLine1 nvarchar(60),
+    @PostalAddressLine2 nvarchar(60) = null,
+    @PostalCityID int,
+    @PostalPostalCode nvarchar(10),
+    @Latitude float = null,
+    @Longitude float = null
+as
+    begin
+        set nocount on
+        begin try
+            begin transaction
+                update Customers
+                set
+                    CustomerName = @CustomerName,
+                    BillToCustomerID = @BillToCustomerID,
+                    LastEditedBy = @LastEditedBy,
+                    CustomerCategoryID = @CustomerCategoryID,
+                    BuyingGroupID = @BuyingGroupID,
+                    PrimaryContactPersonID = @PrimaryContactPersonID,
+                    AlternateContactPersonID = @AlternateContactPersonID,
+                    DeliveryMethodID = @DeliveryMethodID,
+                    PaymentDays = @PaymentDays,
+                    PhoneNumber = @PhoneNumber,
+                    FaxNumber = coalesce(@FaxNumber,N''),
+                    WebsiteURL = coalesce(@WebsiteURL,N''),
+                    DeliveryAddressLine1 = @DeliveryAddressLine1,
+                    DeliveryAddressLine2 = @DeliveryAddressLine2,
+                    DeliveryCityID = @DeliveryCityID,
+                    DeliveryPostalCode = @DeliveryPostalCode,
+                    PostalAddressLine1 = @PostalAddressLine1,
+                    PostalAddressLine2 = @PostalAddressLine2,
+                    PostalCityID = @PostalCityID,
+                    PostalPostalCode = @PostalPostalCode,
+                    DeliveryLocation = case when @Latitude is not null and @Longitude is not null
+                                             then geography::Point(@Latitude, @Longitude, 4326)
+                                             else DeliveryLocation end
+                where CustomerID = @CustomerID
+
+                if @@rowcount = 0
+                    throw 51000, 'El cliente indicado no existe.', 1
+            commit transaction
+            print 'Cliente actualizado correctamente. CustomerID = ' + cast(@CustomerID as varchar(20)) + ' (' + @CustomerName + ')';
+        end try
+        begin catch
+            if @@trancount > 0
+                rollback transaction;
+            ;throw;
+        end catch
+    end
+go
+
+/*
+    Elimina un cliente por su CustomerID. Solo permite la eliminación si el cliente no tiene facturas ni otros registros 
+    relacionados (FK). Si no existe, lanza error 51001; si hay violación de integridad referencial (error 547), lanza error 
+    51002 con un mensaje más claro.
+*/
+create or alter procedure Sales.DeleteCustomer
+    @CustomerID int
+as
+    begin
+        set nocount on
+        begin try
+            begin transaction
+                delete from Customers
+                where CustomerID = @CustomerID
+
+                if @@rowcount = 0
+                    throw 51001, 'El cliente indicado no existe.', 1
+            commit transaction
+            print 'Cliente eliminado correctamente. CustomerID = ' + cast(@CustomerID as varchar(20));
+        end try
+        begin catch
+            if @@trancount > 0
+                rollback transaction
+
+            if error_number() = 547
+                throw 51002, 'No se puede eliminar el cliente porque tiene facturas u otros registros asociados.', 1
+            else
+                throw
+        end catch
     end
 go
 
