@@ -238,7 +238,7 @@ as
                 select 1 from People
                 where PersonID = @LastEditedBy and IsEmployee = 1
             )
-                throw 51003, 'El LastEditedBy indicado no corresponde a un empleado válido.', 1
+                throw 51002, 'El LastEditedBy indicado no corresponde a un empleado válido.', 1
 
             begin transaction
                 declare @InsertedIDs table (CustomerID int)
@@ -321,7 +321,7 @@ as
                 select 1 from People
                 where PersonID = @LastEditedBy and IsEmployee = 1
             )
-                throw 51003, 'El LastEditedBy indicado no corresponde a un empleado válido.', 1
+                throw 51002, 'El LastEditedBy indicado no corresponde a un empleado válido.', 1
 
             begin transaction
                 update Customers
@@ -370,8 +370,8 @@ go
 
 /*
     Elimina un cliente por su CustomerID. Solo permite la eliminación si el cliente no tiene facturas ni otros registros
-    relacionados (FK). Si no existe, lanza error 51001; si hay violación de integridad referencial (error 547), lanza error
-    51002 con un mensaje más claro.
+    relacionados (FK). Si no existe, lanza error 51000; si hay violación de integridad referencial (error 547), lanza error
+    51001 con un mensaje más claro.
 */
 create or alter procedure Sales.DeleteCustomer
     @CustomerID int
@@ -384,7 +384,7 @@ as
                 where CustomerID = @CustomerID
 
                 if @@rowcount = 0
-                    throw 51001, 'El cliente indicado no existe.', 1
+                    throw 51000, 'El cliente indicado no existe.', 1
             commit transaction
             print 'Cliente eliminado correctamente. CustomerID = ' + cast(@CustomerID as varchar(20));
         end try
@@ -393,7 +393,7 @@ as
                 rollback transaction
 
             if error_number() = 547
-                throw 51002, 'No se puede eliminar el cliente porque tiene facturas u otros registros asociados.', 1
+                throw 51001, 'No se puede eliminar el cliente porque tiene facturas u otros registros asociados.', 1
             else
                 throw
         end catch
