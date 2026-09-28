@@ -539,6 +539,9 @@ as
     end
 go
 
+-- ======================================================================================
+-- Módulo de proveedores 
+-- ======================================================================================
 /*
     Obtiene los proveedores paginados, ordenados por identificador.
     Incluye el total de registros (TotalCount) para calcular la paginación en el cliente.
@@ -592,6 +595,292 @@ as
             SupplierCategoryName as NombreCategoriaProveedor
         from SupplierCategories
         order by SupplierCategoryID
+    end
+go
+
+/*
+    Obtiene el detalle general de un proveedor: código de referencia, nombre, categoría, método de entrega, días de gracia y datos bancarios.
+    Devuelve: SupplierID, CodigoProveedor, NombreProveedor, NombreCategoriaProveedor, NombreMetodoEntrega, DiasGraciaPago, SitioWeb,
+    NombreBanco, SucursalBanco, NumeroCuentaBancaria, CodigoSwift
+*/
+create or alter procedure Purchasing.GetSupplierDetail
+    @SupplierID int
+as
+    begin
+        set nocount on
+        select
+            sp.SupplierID,
+            sp.SupplierReference as CodigoProveedor,
+            sp.SupplierName as NombreProveedor,
+            sg.SupplierCategoryName as NombreCategoriaProveedor,
+            dv.DeliveryMethodName as NombreMetodoEntrega,
+            sp.PaymentDays as DiasGraciaPago,
+            sp.PhoneNumber as Telefono,
+            sp.FaxNumber as Fax,
+            sp.WebSiteURL as SitioWeb,
+            sp.BankAccountName as NombreBanco,
+            sp.BankAccountBranch as SucursalBanco,
+            sp.BankAccountNumber as NumeroCuentaBancaria,
+            sp.BankInternationalCode as CodigoSwift
+        from Suppliers sp
+        inner join SupplierCategories sg on sp.SupplierCategoryID = sg.SupplierCategoryID
+        left join DeliveryMethods dv on sp.DeliveryMethodID = dv.DeliveryMethodID
+        where sp.SupplierID = @SupplierID
+    end
+go
+
+/*
+    Obtiene los contactos (principal y alternativo) de un proveedor específico.
+    Devuelve: una fila con el nombre, teléfono, fax y correo de ambos contactos.
+*/
+create or alter procedure Purchasing.GetSupplierContacts
+    @SupplierID int
+as 
+    begin
+        set nocount on
+        select 
+            pp.FullName as NombreContactoPrincipal,
+            pp.PhoneNumber as TelefonoPrincipal,
+            pp.FaxNumber as FaxPrincipal,
+            pp.EmailAddress as CorreoPrincipal,
+            pa.FullName as NombreContactoAlternativo,
+            pa.PhoneNumber as TelefonoAlternativo,
+            pa.FaxNumber as FaxAlternativo,
+            pa.EmailAddress as CorreoAlternativo
+        from Suppliers sp
+        left join People pp on sp.PrimaryContactPersonID = pp.PersonID
+        left join People pa on sp.AlternateContactPersonID = pa.PersonID
+        where sp.SupplierID = @SupplierID
+    end
+go
+
+/*
+    Obtiene las direcciones de entrega y postal de un proveedor,
+    junto con su ubicación geográfica (latitud/longitud) para el mapa.
+    Devuelve: una fila con ambas direcciones y las coordenadas.
+*/
+create or alter procedure Purchasing.GetSupplierAddress
+    @SupplierID int
+as
+    begin
+        set nocount on
+        select  
+            sp.DeliveryAddressLine1 as DireccionEntrega1,
+            sp.DeliveryAddressLine2 as DireccionEntrega2,
+            ci.CityName as CiudadEntrega,
+            spv.StateProvinceName as ProvinciaEntrega,
+            co.CountryName as PaisEntrega,
+            sp.DeliveryPostalCode as CodigoPostalEntrega,
+            sp.PostalAddressLine1 as DireccionPostal1,
+            sp.PostalAddressLine2 as DireccionPostal2,
+            ci2.CityName as CiudadPostal,
+            spv2.StateProvinceName as ProvinciaPostal,
+            co2.CountryName as PaisPostal,
+            sp.PostalPostalCode as CodigoPostalPostal,
+            sp.DeliveryLocation.Lat as Latitud,
+            sp.DeliveryLocation.Long as Longitud
+        from Suppliers sp
+        inner join Cities ci on sp.DeliveryCityID = ci.CityID
+        inner join StateProvinces spv on ci.StateProvinceID = spv.StateProvinceID
+        inner join Countries co on spv.CountryID = co.CountryID
+        inner join Cities ci2 on sp.PostalCityID = ci2.CityID
+        inner join StateProvinces spv2 on ci2.StateProvinceID = spv2.StateProvinceID
+        inner join Countries co2 on spv2.CountryID = co2.CountryID
+        where sp.SupplierID = @SupplierID
+    end
+go
+
+-- ======================================================================================
+-- CRUD de proveedores
+-- ======================================================================================
+/* 
+   Inserta un nuevo proveedor en la tabla Suppliers. Recibe todos los datos obligatorios 
+   y opcionales del proveedor, maneja valores por defecto (fax, web, ubicación geográfica), 
+   y devuelve el SupplierID generado a través del parámetro de salida @NewSupplierID.
+*/
+create or alter procedure Purchasing.InsertSupplier
+    @SupplierName nvarchar(100),
+    @SupplierCategoryID int,
+    @LastEditedBy int,
+    @SupplierReference nvarchar(20) = null,
+    @PrimaryContactPersonID int,
+    @AlternateContactPersonID int = null,
+    @DeliveryMethodID int,
+    @PaymentDays int,
+    @PhoneNumber nvarchar(20),
+    @FaxNumber nvarchar(20) = null,
+    @WebsiteURL nvarchar(256) = null,
+    @BankAccountName nvarchar(50) = null,
+    @BankAccountBranch nvarchar(50) = null,
+    @BankAccountCode nvarchar(20) = null,
+    @BankAccountNumber nvarchar(20) = null,
+    @BankInternationalCode nvarchar(20) = null,
+    @DeliveryAddressLine1 nvarchar(60),
+    @DeliveryAddressLine2 nvarchar(60) = null,
+    @DeliveryCityID int,
+    @DeliveryPostalCode nvarchar(10),
+    @PostalAddressLine1 nvarchar(60),
+    @PostalAddressLine2 nvarchar(60) = null,
+    @PostalCityID int,
+    @PostalPostalCode nvarchar(10),
+    @Latitude float = null,
+    @Longitude float = null,
+    @NewSupplierID int output
+as
+    begin
+        set nocount on
+        begin try
+            begin transaction
+                declare @InsertedIDs table (SupplierID int)
+
+                insert into Suppliers (
+                    SupplierName, SupplierCategoryID, SupplierReference,
+                    PrimaryContactPersonID, AlternateContactPersonID, DeliveryMethodID,
+                    PaymentDays, PhoneNumber, FaxNumber, WebsiteURL,
+                    BankAccountName, BankAccountBranch, BankAccountCode,
+                    BankAccountNumber, BankInternationalCode,
+                    DeliveryAddressLine1, DeliveryAddressLine2, DeliveryCityID, DeliveryPostalCode,
+                    PostalAddressLine1, PostalAddressLine2, PostalCityID, PostalPostalCode,
+                    DeliveryLocation, LastEditedBy
+                )
+                output inserted.SupplierID into @InsertedIDs
+                values (
+                    @SupplierName, @SupplierCategoryID, @SupplierReference,
+                    @PrimaryContactPersonID, coalesce(@AlternateContactPersonID,@PrimaryContactPersonID), @DeliveryMethodID,
+                    @PaymentDays, @PhoneNumber, coalesce(@FaxNumber,N''), coalesce(@WebsiteURL,N''),
+                    @BankAccountName, @BankAccountBranch, @BankAccountCode,
+                    @BankAccountNumber, @BankInternationalCode,
+                    @DeliveryAddressLine1, @DeliveryAddressLine2, @DeliveryCityID, @DeliveryPostalCode,
+                    @PostalAddressLine1, @PostalAddressLine2, @PostalCityID, @PostalPostalCode,
+                    case when @Latitude is not null and @Longitude is not null
+                         then geography::Point(@Latitude, @Longitude, 4326)
+                         else null end, @LastEditedBy
+                )
+
+                select @NewSupplierID = SupplierID from @InsertedIDs
+            commit transaction
+            print 'Proveedor insertado correctamente. Nuevo SupplierID = ' + cast(@NewSupplierID as varchar(20)) + ' (' + @SupplierName + ')';
+        end try
+        begin catch
+            if @@trancount > 0
+                rollback transaction;
+            ;throw;
+        end catch
+    end
+go
+
+/*
+   Actualiza la información de un proveedor existente. Recibe el @SupplierID y todos los 
+   campos editables. Si el proveedor no existe, lanza un error personalizado (52000). 
+   La columna DeliveryLocation solo se actualiza si se envían latitud y longitud; de lo 
+   contrario, conserva el valor previo.
+*/
+create or alter procedure Purchasing.UpdateSupplier
+    @SupplierID int,
+    @SupplierName nvarchar(100),
+    @SupplierCategoryID int,
+    @LastEditedBy int,
+    @SupplierReference nvarchar(20) = null,
+    @PrimaryContactPersonID int,
+    @AlternateContactPersonID int = null,
+    @DeliveryMethodID int,
+    @PaymentDays int,
+    @PhoneNumber nvarchar(20),
+    @FaxNumber nvarchar(20) = null,
+    @WebsiteURL nvarchar(256) = null,
+    @BankAccountName nvarchar(50) = null,
+    @BankAccountBranch nvarchar(50) = null,
+    @BankAccountCode nvarchar(20) = null,
+    @BankAccountNumber nvarchar(20) = null,
+    @BankInternationalCode nvarchar(20) = null,
+    @DeliveryAddressLine1 nvarchar(60),
+    @DeliveryAddressLine2 nvarchar(60) = null,
+    @DeliveryCityID int,
+    @DeliveryPostalCode nvarchar(10),
+    @PostalAddressLine1 nvarchar(60),
+    @PostalAddressLine2 nvarchar(60) = null,
+    @PostalCityID int,
+    @PostalPostalCode nvarchar(10),
+    @Latitude float = null,
+    @Longitude float = null
+as
+    begin
+        set nocount on
+        begin try
+            begin transaction
+                update Suppliers
+                set
+                    SupplierName = @SupplierName,
+                    LastEditedBy = @LastEditedBy,
+                    SupplierCategoryID = @SupplierCategoryID,
+                    SupplierReference = @SupplierReference,
+                    PrimaryContactPersonID = @PrimaryContactPersonID,
+                    AlternateContactPersonID = coalesce(@AlternateContactPersonID,@PrimaryContactPersonID),
+                    DeliveryMethodID = @DeliveryMethodID,
+                    PaymentDays = @PaymentDays,
+                    PhoneNumber = @PhoneNumber,
+                    FaxNumber = coalesce(@FaxNumber,N''),
+                    WebsiteURL = coalesce(@WebsiteURL,N''),
+                    BankAccountName = @BankAccountName,
+                    BankAccountBranch = @BankAccountBranch,
+                    BankAccountCode = @BankAccountCode,
+                    BankAccountNumber = @BankAccountNumber,
+                    BankInternationalCode = @BankInternationalCode,
+                    DeliveryAddressLine1 = @DeliveryAddressLine1,
+                    DeliveryAddressLine2 = @DeliveryAddressLine2,
+                    DeliveryCityID = @DeliveryCityID,
+                    DeliveryPostalCode = @DeliveryPostalCode,
+                    PostalAddressLine1 = @PostalAddressLine1,
+                    PostalAddressLine2 = @PostalAddressLine2,
+                    PostalCityID = @PostalCityID,
+                    PostalPostalCode = @PostalPostalCode,
+                    DeliveryLocation = case when @Latitude is not null and @Longitude is not null
+                                             then geography::Point(@Latitude, @Longitude, 4326)
+                                             else DeliveryLocation end
+                where SupplierID = @SupplierID
+
+                if @@rowcount = 0
+                    throw 52000, 'El proveedor indicado no existe.', 1
+            commit transaction
+            print 'Proveedor actualizado correctamente. SupplierID = ' + cast(@SupplierID as varchar(20)) + ' (' + @SupplierName + ')';
+        end try
+        begin catch
+            if @@trancount > 0
+                rollback transaction;
+            ;throw;
+        end catch
+    end
+go
+
+/*
+   Elimina un proveedor por su SupplierID. Solo permite la eliminación si el proveedor 
+   no tiene productos, órdenes de compra ni otros registros relacionados (FK). Si no 
+   existe, lanza error 52001; si hay violación de integridad referencial (error 547), 
+   lanza error 52002 con un mensaje más claro. 
+*/
+create or alter procedure Purchasing.DeleteSupplier
+    @SupplierID int
+as
+    begin
+        set nocount on
+        begin try
+            begin transaction
+                delete from Suppliers
+                where SupplierID = @SupplierID
+
+                if @@rowcount = 0
+                    throw 52001, 'El proveedor indicado no existe.', 1
+            commit transaction
+            print 'Proveedor eliminado correctamente. SupplierID = ' + cast(@SupplierID as varchar(20));
+        end try
+        begin catch
+            if @@trancount > 0
+                rollback transaction
+            if error_number() = 547
+                throw 52002, 'No se puede eliminar el proveedor porque tiene productos, órdenes de compra u otros registros asociados.', 1
+            else
+                throw
+        end catch
     end
 go
 
