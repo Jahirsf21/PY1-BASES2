@@ -158,7 +158,8 @@ go
 /*
    Inserta un nuevo proveedor en la tabla Suppliers. Recibe todos los datos obligatorios
    y opcionales del proveedor, maneja valores por defecto (fax, web, ubicación geográfica),
-   y devuelve el SupplierID generado a través del parámetro de salida @NewSupplierID.
+   valida que @LastEditedBy corresponda a un empleado existente, y devuelve el SupplierID
+   generado a través del parámetro de salida @NewSupplierID.
 */
 create or alter procedure Purchasing.InsertSupplier
     @SupplierName nvarchar(100),
@@ -185,6 +186,7 @@ create or alter procedure Purchasing.InsertSupplier
     @PostalAddressLine2 nvarchar(60) = null,
     @PostalCityID int,
     @PostalPostalCode nvarchar(10),
+    @InternalComments nvarchar(max) = null,
     @Latitude float = null,
     @Longitude float = null,
     @NewSupplierID int output
@@ -192,6 +194,12 @@ as
     begin
         set nocount on
         begin try
+            if not exists (
+                select 1 from People
+                where PersonID = @LastEditedBy and IsEmployee = 1
+            )
+                throw 52003, 'El LastEditedBy indicado no corresponde a un empleado válido.', 1
+
             begin transaction
                 declare @InsertedIDs table (SupplierID int)
 
@@ -203,7 +211,7 @@ as
                     BankAccountNumber, BankInternationalCode,
                     DeliveryAddressLine1, DeliveryAddressLine2, DeliveryCityID, DeliveryPostalCode,
                     PostalAddressLine1, PostalAddressLine2, PostalCityID, PostalPostalCode,
-                    DeliveryLocation, LastEditedBy
+                    InternalComments, DeliveryLocation, LastEditedBy
                 )
                 output inserted.SupplierID into @InsertedIDs
                 values (
@@ -214,6 +222,7 @@ as
                     @BankAccountNumber, @BankInternationalCode,
                     @DeliveryAddressLine1, @DeliveryAddressLine2, @DeliveryCityID, @DeliveryPostalCode,
                     @PostalAddressLine1, @PostalAddressLine2, @PostalCityID, @PostalPostalCode,
+                    @InternalComments,
                     case when @Latitude is not null and @Longitude is not null
                          then geography::Point(@Latitude, @Longitude, 4326)
                          else null end, @LastEditedBy
@@ -233,7 +242,8 @@ go
 
 /*
    Actualiza la información de un proveedor existente. Recibe el @SupplierID y todos los
-   campos editables. Si el proveedor no existe, lanza un error personalizado (52000).
+   campos editables. Valida que @LastEditedBy corresponda a un empleado existente antes de
+   aplicar cualquier cambio. Si el proveedor no existe, lanza un error personalizado (52000).
    La columna DeliveryLocation solo se actualiza si se envían latitud y longitud; de lo
    contrario, conserva el valor previo.
 */
@@ -263,12 +273,19 @@ create or alter procedure Purchasing.UpdateSupplier
     @PostalAddressLine2 nvarchar(60) = null,
     @PostalCityID int,
     @PostalPostalCode nvarchar(10),
+    @InternalComments nvarchar(max) = null,
     @Latitude float = null,
     @Longitude float = null
 as
     begin
         set nocount on
         begin try
+            if not exists (
+                select 1 from People
+                where PersonID = @LastEditedBy and IsEmployee = 1
+            )
+                throw 52003, 'El LastEditedBy indicado no corresponde a un empleado válido.', 1
+
             begin transaction
                 update Suppliers
                 set
@@ -296,6 +313,7 @@ as
                     PostalAddressLine2 = @PostalAddressLine2,
                     PostalCityID = @PostalCityID,
                     PostalPostalCode = @PostalPostalCode,
+                    InternalComments = @InternalComments,
                     DeliveryLocation = case when @Latitude is not null and @Longitude is not null
                                              then geography::Point(@Latitude, @Longitude, 4326)
                                              else DeliveryLocation end
