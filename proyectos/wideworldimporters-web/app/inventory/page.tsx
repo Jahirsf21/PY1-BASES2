@@ -258,6 +258,12 @@ export default function InventoryPage() {
                   required
                   defaultValue={pageNumber}
                   disabled={isLoading || totalPages === 0}
+                  onKeyDown={(event) => { if (event.key === '-') event.preventDefault() }}
+                  onChange={(event) => {
+                    if (event.currentTarget.value !== '' && Number(event.currentTarget.value) < 1) {
+                      event.currentTarget.value = '1'
+                    }
+                  }}
                   className="w-16 text-center"
                 />
                 <Button type="submit" variant="outline" disabled={isLoading || totalPages === 0}>
