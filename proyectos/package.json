@@ -1,0 +1,16 @@
+{
+  "name": "proyectos",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently -n front,back -c cyan,green \"pnpm --dir wideworldimporters-web run dev\" \"pnpm --dir wideworldimporters-backend exec node server.js\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}
