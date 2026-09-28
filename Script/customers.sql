@@ -199,15 +199,14 @@ go
 
 /*
     Inserta un nuevo cliente en la tabla Customers. Recibe todos los datos obligatorios y opcionales del cliente,
-    maneja valores por defecto (fecha de apertura de cuenta, fax, web, ubicación geográfica), y devuelve el CustomerID
-    generado a través del parámetro de salida @NewCustomerID
+    maneja valores por defecto (fax, web, ubicación geográfica), valida que @LastEditedBy corresponda a un
+    empleado existente, y devuelve el CustomerID generado a través del parámetro de salida @NewCustomerID
 */
 create or alter procedure Sales.InsertCustomer
     @CustomerName nvarchar(100),
     @CustomerCategoryID int,
     @BillToCustomerID int,
     @LastEditedBy int,
-    @AccountOpenedDate date = null,
     @StandardDiscountPercentage decimal(18,3) = 0,
     @CreditLimit decimal(18,2) = null,
     @IsStatementSent bit = 0,
@@ -235,6 +234,12 @@ as
     begin
         set nocount on
         begin try
+            if not exists (
+                select 1 from People
+                where PersonID = @LastEditedBy and IsEmployee = 1
+            )
+                throw 51003, 'El LastEditedBy indicado no corresponde a un empleado válido.', 1
+
             begin transaction
                 declare @InsertedIDs table (CustomerID int)
 
@@ -251,7 +256,7 @@ as
                 values (
                     @CustomerName, @BillToCustomerID, @CustomerCategoryID, @BuyingGroupID,
                     @PrimaryContactPersonID, @AlternateContactPersonID, @DeliveryMethodID,
-                    coalesce(@AccountOpenedDate, convert(date, sysdatetime())),
+                    convert(date, getdate()),
                     @StandardDiscountPercentage, @CreditLimit, @IsStatementSent, @IsOnCreditHold,
                     @PaymentDays, @PhoneNumber, coalesce(@FaxNumber,N''), coalesce(@WebsiteURL,N''),
                     @DeliveryAddressLine1, @DeliveryAddressLine2, @DeliveryCityID, @DeliveryPostalCode,
@@ -275,8 +280,10 @@ go
 
 /*
     Actualiza la información de un cliente existente. Recibe el @CustomerID y todos los campos editables.
+    Valida que @LastEditedBy corresponda a un empleado existente antes de aplicar cualquier cambio.
     Si el cliente no existe, lanza un error personalizado (51000). La columna DeliveryLocation solo se actualiza
-    si se envían latitud y longitud; de lo contrario, conserva el valor previo.
+    si se envían latitud y longitud; de lo contrario, conserva el valor previo. AccountOpenedDate nunca se toca
+    aquí, ya que es un dato histórico fijado solo al crear el cliente.
 */
 create or alter procedure Sales.UpdateCustomer
     @CustomerID int,
@@ -284,7 +291,6 @@ create or alter procedure Sales.UpdateCustomer
     @CustomerCategoryID int,
     @BillToCustomerID int,
     @LastEditedBy int,
-    @AccountOpenedDate date = null,
     @StandardDiscountPercentage decimal(18,3) = 0,
     @CreditLimit decimal(18,2) = null,
     @IsStatementSent bit = 0,
@@ -311,6 +317,12 @@ as
     begin
         set nocount on
         begin try
+            if not exists (
+                select 1 from People
+                where PersonID = @LastEditedBy and IsEmployee = 1
+            )
+                throw 51003, 'El LastEditedBy indicado no corresponde a un empleado válido.', 1
+
             begin transaction
                 update Customers
                 set
@@ -318,7 +330,6 @@ as
                     BillToCustomerID = @BillToCustomerID,
                     LastEditedBy = @LastEditedBy,
                     CustomerCategoryID = @CustomerCategoryID,
-                    AccountOpenedDate = coalesce(@AccountOpenedDate, AccountOpenedDate),
                     StandardDiscountPercentage = @StandardDiscountPercentage,
                     CreditLimit = @CreditLimit,
                     IsStatementSent = @IsStatementSent,
