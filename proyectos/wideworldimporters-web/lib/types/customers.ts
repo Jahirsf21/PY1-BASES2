@@ -39,7 +39,7 @@ export interface CustomerDetail {
   NombreCliente: string
   NombreCategoriaCliente: string
   NombreGrupoCompra: string | null
-  BillToCustomerID: number
+  NombreClientePorFacturar: string
   NombreMetodoEntrega: string
   DiasGraciaPago: number
   SitioWeb: string | null

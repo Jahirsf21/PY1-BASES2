@@ -10,7 +10,6 @@ import type { CustomerAddress, CustomerContact, CustomerDetail, CustomerRoutePar
 export default function CustomerDetailPage() {
   const { customerID } = useParams<CustomerRouteParams>()
   const [customer, setCustomer] = useState<CustomerDetail | null>(null)
-  const [billToCustomerName, setBillToCustomerName] = useState<string | null>(null)
   const [contacts, setContacts] = useState<CustomerContact | null>(null)
   const [address, setAddress] = useState<CustomerAddress | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -33,14 +32,7 @@ export default function CustomerDetailPage() {
           return
         }
 
-        if (!details[0].BillToCustomerID) {
-          throw new Error('No fue posible obtener el cliente por facturar')
-        }
-
-        const billToCustomer = details[0].BillToCustomerID === id ? details[0] : (await getCustomerByID(details[0].BillToCustomerID))[0]
-
         setCustomer(details[0])
-        setBillToCustomerName(billToCustomer?.NombreCliente ?? null)
         setContacts(customerContacts[0] ?? null)
         setAddress(customerAddress[0] ?? null)
       } catch (error) {
@@ -80,7 +72,7 @@ export default function CustomerDetailPage() {
                 <div><dt className="text-sm text-muted-foreground">Grupo de compra</dt><dd className="break-words font-medium">{customer.NombreGrupoCompra ?? 'No asignado'}</dd></div>
                 <div>
                   <dt className="text-sm text-muted-foreground">Cliente por facturar</dt>
-                  <dd className="break-words font-medium">{billToCustomerName ?? 'No disponible'}</dd>
+                  <dd className="break-words font-medium">{customer.NombreClientePorFacturar}</dd>
                 </div>
                 <div><dt className="text-sm text-muted-foreground">Método de entrega</dt><dd className="break-words font-medium">{customer.NombreMetodoEntrega}</dd></div>
                 <div><dt className="text-sm text-muted-foreground">Días de gracia para pagar</dt><dd className="font-medium">{customer.DiasGraciaPago}</dd></div>
