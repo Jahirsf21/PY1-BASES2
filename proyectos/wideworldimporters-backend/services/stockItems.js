@@ -13,7 +13,7 @@ import sql from "mssql"
  */
 export async function getStockItems(stockItemName, stockGroupID, pageNumber, pageSize) {
     const connection = (await getPool()).request()
-    connection.input('StockItemName', sql.Int, stockItemName)
+    connection.input('StockItemName', sql.NVarChar, stockItemName)
     connection.input('StockGroupID', sql.Int, stockGroupID)
     connection.input('PageNumber', sql.Int, pageNumber)
     connection.input('PageSize', sql.Int, pageSize)
