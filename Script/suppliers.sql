@@ -95,6 +95,56 @@ as
 go
 
 /*
+    Obtiene todos los campos editables de un proveedor y las etiquetas de sus referencias
+    para precargar la actualización sin inferir identificadores de nombres.
+    La ciudad y el código postal se comparten entre las dos direcciones.
+*/
+create or alter procedure Purchasing.GetSupplierForEdit
+    @SupplierID int
+as
+    begin
+        set nocount on
+        select
+            sp.SupplierID,
+            sp.SupplierName as NombreProveedor,
+            sp.SupplierCategoryID,
+            sp.LastEditedBy,
+            sp.SupplierReference as CodigoProveedor,
+            sp.PrimaryContactPersonID,
+            pp.FullName as NombreContactoPrincipal,
+            sp.AlternateContactPersonID,
+            pa.FullName as NombreContactoAlternativo,
+            sp.DeliveryMethodID,
+            sp.PaymentDays as DiasGraciaPago,
+            sp.PhoneNumber as Telefono,
+            sp.FaxNumber as Fax,
+            sp.WebsiteURL as SitioWeb,
+            sp.BankAccountName as NombreBanco,
+            sp.BankAccountBranch as SucursalBanco,
+            sp.BankAccountCode as CodigoCuentaBancaria,
+            sp.BankAccountNumber as NumeroCuentaBancaria,
+            sp.BankInternationalCode as CodigoSwift,
+            sp.DeliveryAddressLine1 as DireccionEntrega1,
+            sp.DeliveryAddressLine2 as DireccionEntrega2,
+            sp.DeliveryCityID,
+            concat(ci.CityName, ', ', spv.StateProvinceName, ', ', co.CountryName) as CiudadEntrega,
+            sp.DeliveryPostalCode as CodigoPostalEntrega,
+            sp.PostalAddressLine1 as DireccionPostal1,
+            sp.PostalAddressLine2 as DireccionPostal2,
+            sp.InternalComments as ComentariosInternos,
+            sp.DeliveryLocation.Lat as Latitud,
+            sp.DeliveryLocation.Long as Longitud
+        from Suppliers sp
+        inner join People pp on pp.PersonID = sp.PrimaryContactPersonID
+        inner join People pa on pa.PersonID = sp.AlternateContactPersonID
+        inner join Cities ci on ci.CityID = sp.DeliveryCityID
+        inner join StateProvinces spv on spv.StateProvinceID = ci.StateProvinceID
+        inner join Countries co on co.CountryID = spv.CountryID
+        where sp.SupplierID = @SupplierID
+    end
+go
+
+/*
     Obtiene los contactos (principal y alternativo) de un proveedor específico.
     Devuelve: una fila con el nombre, teléfono, fax y correo de ambos contactos.
 */
@@ -113,8 +163,8 @@ as
             pa.FaxNumber as FaxAlternativo,
             pa.EmailAddress as CorreoAlternativo
         from Suppliers sp
-        left join People pp on sp.PrimaryContactPersonID = pp.PersonID
-        left join People pa on sp.AlternateContactPersonID = pa.PersonID
+        inner join People pp on sp.PrimaryContactPersonID = pp.PersonID
+        inner join People pa on sp.AlternateContactPersonID = pa.PersonID
         where sp.SupplierID = @SupplierID
     end
 go
@@ -160,6 +210,7 @@ go
    y opcionales del proveedor, maneja valores por defecto (fax, web, ubicación geográfica),
    valida que @LastEditedBy corresponda a un empleado existente, y devuelve el SupplierID
    generado a través del parámetro de salida @NewSupplierID.
+   La ciudad y el código postal de entrega también se guardan en la dirección postal.
 */
 create or alter procedure Purchasing.InsertSupplier
     @SupplierName nvarchar(100),
@@ -184,8 +235,6 @@ create or alter procedure Purchasing.InsertSupplier
     @DeliveryPostalCode nvarchar(10),
     @PostalAddressLine1 nvarchar(60),
     @PostalAddressLine2 nvarchar(60) = null,
-    @PostalCityID int,
-    @PostalPostalCode nvarchar(10),
     @InternalComments nvarchar(max) = null,
     @Latitude float = null,
     @Longitude float = null,
@@ -221,7 +270,7 @@ as
                     @BankAccountName, @BankAccountBranch, @BankAccountCode,
                     @BankAccountNumber, @BankInternationalCode,
                     @DeliveryAddressLine1, @DeliveryAddressLine2, @DeliveryCityID, @DeliveryPostalCode,
-                    @PostalAddressLine1, @PostalAddressLine2, @PostalCityID, @PostalPostalCode,
+                    @PostalAddressLine1, @PostalAddressLine2, @DeliveryCityID, @DeliveryPostalCode,
                     @InternalComments,
                     case when @Latitude is not null and @Longitude is not null
                          then geography::Point(@Latitude, @Longitude, 4326)
@@ -245,7 +294,7 @@ go
    campos editables. Valida que @LastEditedBy corresponda a un empleado existente antes de
    aplicar cualquier cambio. Si el proveedor no existe, lanza un error personalizado (52000).
    La columna DeliveryLocation solo se actualiza si se envían latitud y longitud; de lo
-   contrario, conserva el valor previo.
+   contrario, conserva el valor previo. La ciudad y el código postal de entrega tambien actualizan los valores postales
 */
 create or alter procedure Purchasing.UpdateSupplier
     @SupplierID int,
@@ -271,8 +320,6 @@ create or alter procedure Purchasing.UpdateSupplier
     @DeliveryPostalCode nvarchar(10),
     @PostalAddressLine1 nvarchar(60),
     @PostalAddressLine2 nvarchar(60) = null,
-    @PostalCityID int,
-    @PostalPostalCode nvarchar(10),
     @InternalComments nvarchar(max) = null,
     @Latitude float = null,
     @Longitude float = null
@@ -311,8 +358,8 @@ as
                     DeliveryPostalCode = @DeliveryPostalCode,
                     PostalAddressLine1 = @PostalAddressLine1,
                     PostalAddressLine2 = @PostalAddressLine2,
-                    PostalCityID = @PostalCityID,
-                    PostalPostalCode = @PostalPostalCode,
+                    PostalCityID = @DeliveryCityID,
+                    PostalPostalCode = @DeliveryPostalCode,
                     InternalComments = @InternalComments,
                     DeliveryLocation = case when @Latitude is not null and @Longitude is not null
                                              then geography::Point(@Latitude, @Longitude, 4326)

@@ -43,10 +43,30 @@ as
             PersonID,
             FullName as NombreCompleto
         from People
-        where @FullName is null or FullName like '%' + @FullName + '%'
+        where 
+            (@FullName is null or FullName like '%' + @FullName + '%')
+            and IsEmployee = 0
+            and IsSalesperson = 0
+            and PersonID != 1
         order by PersonID
         offset(@PageNumber - 1) * @PageSize rows
         fetch next @PageSize rows only
+    end
+go
+
+/*
+    Obtiene las personas registradas como empleados para los formularios.
+    Devuelve: PersonID, NombreCompleto.
+*/
+create or alter procedure Application.GetEmployee
+as 
+    begin
+        set nocount
+        select 
+            PersonID,
+            FullName as NombreCompleto
+        from People
+        where IsEmployee = 1
     end
 go
 

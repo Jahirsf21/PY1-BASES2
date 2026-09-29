@@ -104,6 +104,56 @@ as
 go
 
 /*
+    Devuelve los valores editables del cliente y los nombres de sus referencias. La ciudad y el código postal
+    de ambas direcciones se comparten y solo se devuelven una vez.
+*/
+create or alter procedure Sales.GetCustomerForEdit
+    @CustomerID int
+as
+    begin
+        set nocount on
+        select
+            cs.CustomerID,
+            cs.CustomerName as NombreCliente,
+            cs.CustomerCategoryID,
+            cs.BillToCustomerID,
+            bill.CustomerName as NombreClientePorFacturar,
+            cs.LastEditedBy,
+            cs.StandardDiscountPercentage as PorcentajeDescuentoEstandar,
+            cs.CreditLimit as LimiteCredito,
+            cs.IsStatementSent as EnviarEstadoCuenta,
+            cs.IsOnCreditHold as CreditoSuspendido,
+            cs.BuyingGroupID,
+            cs.PrimaryContactPersonID,
+            pp.FullName as NombreContactoPrincipal,
+            cs.AlternateContactPersonID,
+            pa.FullName as NombreContactoAlternativo,
+            cs.DeliveryMethodID,
+            cs.PaymentDays as DiasGraciaPago,
+            cs.PhoneNumber as Telefono,
+            cs.FaxNumber as Fax,
+            cs.WebsiteURL as SitioWeb,
+            cs.DeliveryAddressLine1 as DireccionEntrega1,
+            cs.DeliveryAddressLine2 as DireccionEntrega2,
+            cs.DeliveryCityID,
+            concat(ci.CityName, ', ', sp.StateProvinceName, ', ', co.CountryName) as CiudadEntrega,
+            cs.DeliveryPostalCode as CodigoPostalEntrega,
+            cs.PostalAddressLine1 as DireccionPostal1,
+            cs.PostalAddressLine2 as DireccionPostal2,
+            cs.DeliveryLocation.Lat as Latitud,
+            cs.DeliveryLocation.Long as Longitud
+        from Customers cs
+        inner join Customers bill on bill.CustomerID = cs.BillToCustomerID
+        inner join People pp on pp.PersonID = cs.PrimaryContactPersonID
+        left join People pa on pa.PersonID = cs.AlternateContactPersonID
+        inner join Cities ci on ci.CityID = cs.DeliveryCityID
+        inner join StateProvinces sp on sp.StateProvinceID = ci.StateProvinceID
+        inner join Countries co on co.CountryID = sp.CountryID
+        where cs.CustomerID = @CustomerID
+    end
+go
+
+/*
     Obtiene los contactos (principal y alternativo) de un cliente específico.
     Devuelve: una fila con el nombre, teléfono, fax y correo de ambos contactos.
 */
@@ -122,7 +172,7 @@ as
             pa.FaxNumber as FaxAlternativo,
             pa.EmailAddress as CorreoAlternativo
         from Customers cs
-        left join People pp on cs.PrimaryContactPersonID = pp.PersonID
+        inner join People pp on cs.PrimaryContactPersonID = pp.PersonID
         left join People pa on cs.AlternateContactPersonID = pa.PersonID
         where cs.CustomerID = @CustomerID
     end
@@ -200,12 +250,14 @@ go
 /*
     Inserta un nuevo cliente en la tabla Customers. Recibe todos los datos obligatorios y opcionales del cliente,
     maneja valores por defecto (fax, web, ubicación geográfica), valida que @LastEditedBy corresponda a un
-    empleado existente, y devuelve el CustomerID generado a través del parámetro de salida @NewCustomerID
+    empleado existente, y devuelve el CustomerID generado a través del parámetro de salida @NewCustomerID.
+    Si @BillToCustomerID es null, el cliente nuevo se factura a sí mismo.
+    La ciudad y el código postal de entrega también se guardan en la dirección postal.
 */
 create or alter procedure Sales.InsertCustomer
     @CustomerName nvarchar(100),
     @CustomerCategoryID int,
-    @BillToCustomerID int,
+    @BillToCustomerID int = null,
     @LastEditedBy int,
     @StandardDiscountPercentage decimal(18,3) = 0,
     @CreditLimit decimal(18,2) = null,
@@ -225,8 +277,6 @@ create or alter procedure Sales.InsertCustomer
     @DeliveryPostalCode nvarchar(10),
     @PostalAddressLine1 nvarchar(60),
     @PostalAddressLine2 nvarchar(60) = null,
-    @PostalCityID int,
-    @PostalPostalCode nvarchar(10),
     @Latitude float = null,
     @Longitude float = null,
     @NewCustomerID int output
@@ -241,10 +291,10 @@ as
                 throw 51002, 'El LastEditedBy indicado no corresponde a un empleado válido.', 1
 
             begin transaction
-                declare @InsertedIDs table (CustomerID int)
+                set @NewCustomerID = next value for Sequences.CustomerID
 
                 insert into Customers (
-                    CustomerName, BillToCustomerID, CustomerCategoryID, BuyingGroupID,
+                    CustomerID, CustomerName, BillToCustomerID, CustomerCategoryID, BuyingGroupID,
                     PrimaryContactPersonID, AlternateContactPersonID, DeliveryMethodID,
                     AccountOpenedDate, StandardDiscountPercentage, CreditLimit, IsStatementSent, IsOnCreditHold,
                     PaymentDays, PhoneNumber, FaxNumber, WebsiteURL,
@@ -252,21 +302,19 @@ as
                     PostalAddressLine1, PostalAddressLine2, PostalCityID, PostalPostalCode,
                     DeliveryLocation, LastEditedBy
                 )
-                output inserted.CustomerID into @InsertedIDs
                 values (
-                    @CustomerName, @BillToCustomerID, @CustomerCategoryID, @BuyingGroupID,
+                    @NewCustomerID, @CustomerName, coalesce(@BillToCustomerID, @NewCustomerID), @CustomerCategoryID, @BuyingGroupID,
                     @PrimaryContactPersonID, @AlternateContactPersonID, @DeliveryMethodID,
                     convert(date, getdate()),
                     @StandardDiscountPercentage, @CreditLimit, @IsStatementSent, @IsOnCreditHold,
                     @PaymentDays, @PhoneNumber, coalesce(@FaxNumber,N''), coalesce(@WebsiteURL,N''),
                     @DeliveryAddressLine1, @DeliveryAddressLine2, @DeliveryCityID, @DeliveryPostalCode,
-                    @PostalAddressLine1, @PostalAddressLine2, @PostalCityID, @PostalPostalCode,
+                    @PostalAddressLine1, @PostalAddressLine2, @DeliveryCityID, @DeliveryPostalCode,
                     case when @Latitude is not null and @Longitude is not null
                          then geography::Point(@Latitude, @Longitude, 4326)
                          else null end, @LastEditedBy
                 )
 
-                select @NewCustomerID = CustomerID from @InsertedIDs
             commit transaction
             print 'Cliente insertado correctamente. Nuevo CustomerID = '  + cast(@NewCustomerID as varchar(20)) + ' (' + @CustomerName + ')';
         end try
@@ -284,7 +332,9 @@ go
     Si el cliente no existe, lanza un error personalizado (51000). La columna DeliveryLocation solo se actualiza
     si se envían latitud y longitud; de lo contrario, conserva el valor previo. AccountOpenedDate nunca se toca
     aquí, ya que es un dato histórico fijado solo al crear el cliente.
+    La ciudad y el código postal de entrega también actualizan los valores postales.
 */
+create or alter procedure Sales.UpdateCustomer
 create or alter procedure Sales.UpdateCustomer
     @CustomerID int,
     @CustomerName nvarchar(100),
@@ -309,8 +359,6 @@ create or alter procedure Sales.UpdateCustomer
     @DeliveryPostalCode nvarchar(10),
     @PostalAddressLine1 nvarchar(60),
     @PostalAddressLine2 nvarchar(60) = null,
-    @PostalCityID int,
-    @PostalPostalCode nvarchar(10),
     @Latitude float = null,
     @Longitude float = null
 as
@@ -348,8 +396,8 @@ as
                     DeliveryPostalCode = @DeliveryPostalCode,
                     PostalAddressLine1 = @PostalAddressLine1,
                     PostalAddressLine2 = @PostalAddressLine2,
-                    PostalCityID = @PostalCityID,
-                    PostalPostalCode = @PostalPostalCode,
+                    PostalCityID = @DeliveryCityID,
+                    PostalPostalCode = @DeliveryPostalCode,
                     DeliveryLocation = case when @Latitude is not null and @Longitude is not null
                                              then geography::Point(@Latitude, @Longitude, 4326)
                                              else DeliveryLocation end
