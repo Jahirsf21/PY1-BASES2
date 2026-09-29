@@ -1,5 +1,5 @@
 import { paginatedResponse } from '../helpers/paginatedResponse.js'
-import { getBillToCustomers, getBuyingGroups, getCustomerAddress, getCustomerCategories, getCustomerContacts, getCustomerDetail, getCustomers, insertCustomer, deleteCustomer, updateCustomer } from '../services/customers.js'
+import { getBillToCustomers, getBuyingGroups, getCustomerAddress, getCustomerCategories, getCustomerContacts, getCustomerDetail, getCustomerForEdit, getCustomers, insertCustomer, deleteCustomer, updateCustomer } from '../services/customers.js'
 
 /**
  * Obtiene una página de clientes.
@@ -112,6 +112,26 @@ export async function getCustomerById(req, res) {
 }
 
 /**
+ * Obtiene los datos editables de un cliente.
+ *
+ * @param {import('express').Request} req Petición con customerID en la ruta.
+ * @param {import('express').Response} res Respuesta HTTP.
+ * @returns {Promise<import('express').Response>} Datos del formulario o 404.
+ */
+export async function getCustomerEditById(req, res) {
+    const customerID = Number(req.params.customerID)
+    try {
+        const customer = await getCustomerForEdit(customerID)
+        if (customer.length === 0) {
+            return res.status(404).json({message: 'Cliente no encontrado'})
+        }
+        return res.json(customer[0])
+    } catch (error) {
+        return res.status(500).json({message: 'Error al obtener los datos editables del cliente'})
+    }
+}
+
+/**
  * Obtiene los contactos (principal y alternativo) de un cliente por su identificador.
  * Devuelve nombre, teléfono, fax y correo de ambos contactos.
  *
@@ -167,10 +187,10 @@ export async function addCustomer(req, res) {
         return res.status(400).json({message: 'El cuerpo de la solicitud debe contener los datos del cliente'})
     }
     const requiredFields = [
-        'customerName', 'customerCategoryID', 'billToCustomerID', 'lastEditedBy',
+        'customerName', 'customerCategoryID', 'lastEditedBy',
         'primaryContactPersonID', 'deliveryMethodID', 'paymentDays', 'phoneNumber',
         'deliveryAddressLine1', 'deliveryCityID', 'deliveryPostalCode',
-        'postalAddressLine1', 'postalCityID', 'postalPostalCode',
+        'postalAddressLine1',
     ]
     const missingFields = requiredFields.filter((field) => {
         const value = customer[field]
@@ -186,7 +206,7 @@ export async function addCustomer(req, res) {
         const customerID = await insertCustomer(
             customer.customerName,
             customer.customerCategoryID,
-            customer.billToCustomerID,
+            customer.billToCustomerID ?? null,
             customer.lastEditedBy,
             customer.standardDiscountPercentage ?? 0,
             customer.creditLimit ?? null,
@@ -206,8 +226,6 @@ export async function addCustomer(req, res) {
             customer.deliveryPostalCode,
             customer.postalAddressLine1,
             customer.postalAddressLine2 ?? null,
-            customer.postalCityID,
-            customer.postalPostalCode,
             customer.latitude ?? null,
             customer.longitude ?? null,
         )
@@ -266,7 +284,7 @@ export async function editCustomer(req, res) {
         'customerName', 'customerCategoryID', 'billToCustomerID', 'lastEditedBy',
         'primaryContactPersonID', 'deliveryMethodID', 'paymentDays', 'phoneNumber',
         'deliveryAddressLine1', 'deliveryCityID', 'deliveryPostalCode',
-        'postalAddressLine1', 'postalCityID', 'postalPostalCode',
+        'postalAddressLine1',
     ]
     const missingFields = requiredFields.filter((field) => {
         const value = customer[field]
@@ -300,8 +318,6 @@ export async function editCustomer(req, res) {
             customer.deliveryPostalCode,
             customer.postalAddressLine1,
             customer.postalAddressLine2 ?? null,
-            customer.postalCityID,
-            customer.postalPostalCode,
             customer.latitude ?? null,
             customer.longitude ?? null,
         )

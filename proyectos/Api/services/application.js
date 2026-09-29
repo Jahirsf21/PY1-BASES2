@@ -2,7 +2,8 @@ import {getPool} from '../config/database.js'
 import sql from "mssql"
 
 /**
- * Obtiene una página de personas, opcionalmente filtradas por nombre.
+ * Obtiene una página de personas que no son empleados ni vendedores, excluyendo la persona con ID 1.
+ * Permite filtrar opcionalmente por nombre completo.
  *
  * @param {string|null} fullName Nombre completo (búsqueda parcial) o null para no filtrar.
  * @param {number} pageNumber Número de página solicitado.
@@ -23,8 +24,8 @@ export async function getPeople(fullName, pageNumber, pageSize) {
 }
 
 /**
- * Obtiene una página de ciudades, opcionalmente filtradas por nombre de ciudad,
- * provincia y país.
+ * Obtiene una página de ciudades junto con el total de registros.
+ * Permite filtrar opcionalmente por nombre de ciudad, provincia y país.
  *
  * @param {string|null} cityName Nombre de ciudad (búsqueda parcial) o null para no filtrar.
  * @param {string|null} provinceName Nombre de provincia (búsqueda parcial) o null para no filtrar.
@@ -57,5 +58,16 @@ export async function getCities(cityName, provinceName, countryName, pageNumber,
 export async function getDeliveryMethods() {
     const connection = (await getPool()).request()
     const result = await connection.execute('Application.GetDeliveryMethods')
+    return result.recordset
+}
+
+/**
+ * Obtiene las personas registradas como empleados para los formularios.
+ *
+ * @returns {Promise<object[]>} Empleados con PersonID y NombreCompleto.
+ */
+export async function getEmployees() {
+    const connection = (await getPool()).request()
+    const result = await connection.execute('Application.GetEmployee')
     return result.recordset
 }

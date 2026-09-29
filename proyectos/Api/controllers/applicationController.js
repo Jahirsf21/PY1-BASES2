@@ -1,5 +1,5 @@
 import { paginatedResponse } from '../helpers/paginatedResponse.js'
-import { getPeople, getCities, getDeliveryMethods } from '../services/application.js'
+import { getPeople, getCities, getDeliveryMethods, getEmployees } from '../services/application.js'
 
 /**
  * Obtiene una página de personas, opcionalmente filtradas por nombre.
@@ -13,17 +13,16 @@ export async function listPeople(req, res) {
         const pageNumber = parseInt(req.query.pageNumber, 10)
         const pageSize = parseInt(req.query.pageSize, 10)
         if (pageNumber < 1 || pageSize < 1) {
-            return res.status(400).json({ message: 'pageNumber y pageSize deben ser mayores a 0' })
+            return res.status(400).json({message: 'pageNumber y pageSize deben ser mayores a 0'})
         }
         if (pageSize > 100) {
-            return res.status(400).json({ message: 'pageSize no puede ser mayor a 100' })
+            return res.status(400).json({message: 'pageSize no puede ser mayor a 100'})
         }
-
         const fullName = req.query.fullName
         const result = await getPeople(fullName, pageNumber, pageSize)
         return paginatedResponse(res, pageNumber, pageSize, result)
     } catch (error) {
-        res.status(500).json({ message: 'Error al obtener personas' })
+        res.status(500).json({message: 'Error al obtener personas'})
     }
 }
 
@@ -39,10 +38,10 @@ export async function listCities(req, res) {
         const pageNumber = parseInt(req.query.pageNumber, 10)
         const pageSize = parseInt(req.query.pageSize, 10)
         if (pageNumber < 1 || pageSize < 1) {
-            return res.status(400).json({ message: 'pageNumber y pageSize deben ser mayores a 0' })
+            return res.status(400).json({message: 'pageNumber y pageSize deben ser mayores a 0'})
         }
         if (pageSize > 100) {
-            return res.status(400).json({ message: 'pageSize no puede ser mayor a 100' })
+            return res.status(400).json({message: 'pageSize no puede ser mayor a 100'})
         }
         const cityName = req.query.cityName
         const provinceName = req.query.provinceName
@@ -50,7 +49,7 @@ export async function listCities(req, res) {
         const result = await getCities(cityName, provinceName, countryName, pageNumber, pageSize)
         return paginatedResponse(res, pageNumber, pageSize, result)
     } catch (error) {
-        res.status(500).json({ message: 'Error al obtener ciudades' })
+        res.status(500).json({message: 'Error al obtener ciudades'})
     }
 }
 
@@ -67,6 +66,22 @@ export async function listDeliveryMethods(req, res) {
         const methods = await getDeliveryMethods()
         return res.json(methods)
     } catch (error) {
-        res.status(500).json({ message: 'Error al obtener los métodos de entrega' })
+        res.status(500).json({message: 'Error al obtener los métodos de entrega'})
+    }
+}
+
+/**
+ * Obtiene los empleados disponibles para los formularios.
+ *
+ * @param {import('express').Request} req Petición HTTP.
+ * @param {import('express').Response} res Respuesta HTTP.
+ * @returns {Promise<import('express').Response>} Respuesta JSON con los empleados.
+ */
+export async function listEmployees(req, res) {
+    try {
+        const employees = await getEmployees()
+        return res.json(employees)
+    } catch (error) {
+        return res.status(500).json({message: 'Error al obtener empleados'})
     }
 }

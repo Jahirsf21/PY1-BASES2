@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { listPeople, listCities, listDeliveryMethods } from '../controllers/applicationController.js'
+import { listPeople, listCities, listDeliveryMethods, listEmployees } from '../controllers/applicationController.js'
 
 // Rutas de Application (datos de referencia compartidos).
 const router = Router()
@@ -10,6 +10,12 @@ const router = Router()
  * Query params: pageNumber, pageSize, fullName
  */
 router.get('/people', listPeople)
+
+/**
+ * GET /employees
+ * Devuelve las personas registradas como empleados.
+ */
+router.get('/employees', listEmployees)
 
 /**
  * GET /cities

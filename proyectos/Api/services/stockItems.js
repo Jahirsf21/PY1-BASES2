@@ -6,7 +6,7 @@ import sql from "mssql"
  * Permite filtrar opcionalmente por nombre de producto y grupo.
  *
  * @param {string|null} stockItemName Nombre del producto (búsqueda parcial) o null para no filtrar.
- * @param {number|null} stockGroupID  ID del grupo de productos o null para no filtrar.
+ * @param {number|null} stockGroupID ID del grupo de productos o null para no filtrar.
  * @param {number} pageNumber Número de página solicitado.
  * @param {number} pageSize Cantidad de productos por página.
  * @returns {Promise<{totalCount: number, data: object[]}>} Total de registros y productos de la página.

@@ -55,7 +55,7 @@ export async function getBillToCustomers(customerName, pageNumber, pageSize) {
  * método de entrega, días de gracia y sitio web.
  *
  * @param {number} customerID Identificador del cliente.
- * @returns {Promise<object>} Datos del cliente.
+ * @returns {Promise<object[]>} Datos del cliente en una fila, o un arreglo vacío si no existe.
  */
 export async function getCustomerDetail(customerID) {
     const connection = (await getPool()).request()
@@ -65,11 +65,25 @@ export async function getCustomerDetail(customerID) {
 }
 
 /**
+ * Obtiene los valores editables y nombres de referencia de un cliente.
+ * La ciudad y el código postal son compartidos por las direcciones de entrega y postal.
+ *
+ * @param {number} customerID Identificador del cliente.
+ * @returns {Promise<object[]>} Datos para precargar el formulario, o un arreglo vacío si no existe.
+ */
+export async function getCustomerForEdit(customerID) {
+    const connection = (await getPool()).request()
+    connection.input('CustomerID', sql.Int, customerID)
+    const result = await connection.execute('Sales.GetCustomerForEdit')
+    return result.recordset
+}
+
+/**
  * Obtiene los contactos (principal y alternativo) de un cliente por su identificador.
  * Devuelve nombre, teléfono, fax y correo de ambos contactos en una sola fila.
  *
  * @param {number} customerID Identificador del cliente.
- * @returns {Promise<object>} Datos de los contactos principal y alternativo.
+ * @returns {Promise<object[]>} Datos de los contactos en una fila, o un arreglo vacío si no existe.
  */
 export async function getCustomerContacts(customerID) {
     const connection = (await getPool()).request()
@@ -83,7 +97,7 @@ export async function getCustomerContacts(customerID) {
  * junto con su ubicación geográfica (latitud/longitud).
  *
  * @param {number} customerID Identificador del cliente.
- * @returns {Promise<object>} Direcciones y coordenadas del cliente.
+ * @returns {Promise<object[]>} Direcciones y coordenadas en una fila, o un arreglo vacío si no existe.
  */
 export async function getCustomerAddress(customerID) {
     const connection = (await getPool()).request()
@@ -120,10 +134,12 @@ export async function getBuyingGroups() {
  * Inserta un cliente mediante Sales.InsertCustomer y devuelve su identificador.
  * El procedimiento lanza el error 51002 si lastEditedBy no corresponde
  * a un empleado válido.
+ * Si billToCustomerID es null, el cliente se factura a sí mismo.
+ * La ciudad y el código postal de entrega se guardan también como datos postales.
  *
  * @param {string} customerName Nombre del cliente.
  * @param {number} customerCategoryID ID de la categoría del cliente.
- * @param {number} billToCustomerID ID del cliente al que se factura.
+ * @param {number|null} billToCustomerID ID del cliente al que se factura o null para facturarse a sí mismo.
  * @param {number} lastEditedBy ID del empleado que registra el cliente.
  * @param {number} standardDiscountPercentage Porcentaje de descuento estándar.
  * @param {number|null} creditLimit Límite de crédito o null si no aplica.
@@ -139,17 +155,15 @@ export async function getBuyingGroups() {
  * @param {string|null} websiteURL URL del sitio web o null.
  * @param {string} deliveryAddressLine1 Primera línea de la dirección de entrega.
  * @param {string|null} deliveryAddressLine2 Segunda línea de la dirección de entrega o null.
- * @param {number} deliveryCityID ID de la ciudad de entrega.
- * @param {string} deliveryPostalCode Código postal de entrega.
+ * @param {number} deliveryCityID ID compartido de la ciudad de entrega y postal.
+ * @param {string} deliveryPostalCode Código postal compartido para ambas direcciones.
  * @param {string} postalAddressLine1 Primera línea de la dirección postal.
  * @param {string|null} postalAddressLine2 Segunda línea de la dirección postal o null.
- * @param {number} postalCityID ID de la ciudad postal.
- * @param {string} postalPostalCode Código postal de la dirección postal.
  * @param {number|null} latitude Latitud de entrega o null.
  * @param {number|null} longitude Longitud de entrega o null.
  * @returns {Promise<number>} Identificador del nuevo cliente.
  */
-export async function insertCustomer(customerName, customerCategoryID, billToCustomerID, lastEditedBy, standardDiscountPercentage, creditLimit, isStatementSent, isOnCreditHold, buyingGroupID, primaryContactPersonID, alternateContactPersonID, deliveryMethodID, paymentDays, phoneNumber, faxNumber, websiteURL, deliveryAddressLine1, deliveryAddressLine2, deliveryCityID, deliveryPostalCode, postalAddressLine1, postalAddressLine2, postalCityID, postalPostalCode, latitude, longitude) {
+export async function insertCustomer(customerName, customerCategoryID, billToCustomerID, lastEditedBy, standardDiscountPercentage, creditLimit, isStatementSent, isOnCreditHold, buyingGroupID, primaryContactPersonID, alternateContactPersonID, deliveryMethodID, paymentDays, phoneNumber, faxNumber, websiteURL, deliveryAddressLine1, deliveryAddressLine2, deliveryCityID, deliveryPostalCode, postalAddressLine1, postalAddressLine2, latitude, longitude) {
     const connection = (await getPool()).request()
     connection.input('CustomerName', sql.NVarChar, customerName)
     connection.input('CustomerCategoryID', sql.Int, customerCategoryID)
@@ -173,8 +187,6 @@ export async function insertCustomer(customerName, customerCategoryID, billToCus
     connection.input('DeliveryPostalCode', sql.NVarChar, deliveryPostalCode)
     connection.input('PostalAddressLine1', sql.NVarChar, postalAddressLine1)
     connection.input('PostalAddressLine2', sql.NVarChar, postalAddressLine2)
-    connection.input('PostalCityID', sql.Int, postalCityID)
-    connection.input('PostalPostalCode', sql.NVarChar, postalPostalCode)
     connection.input('Latitude', sql.Float, latitude)
     connection.input('Longitude', sql.Float, longitude)
     connection.output('NewCustomerID', sql.Int)
@@ -200,7 +212,8 @@ export async function deleteCustomer(customerID) {
 /**
  * Actualiza un cliente mediante Sales.UpdateCustomer.
  * Lanza 51000 si el cliente no existe y 51002 si lastEditedBy no es un empleado válido.
- * AccountOpenedDate no se modifica.
+ * AccountOpenedDate no se modifica; la ciudad y el código postal de entrega
+ * también actualizan los datos postales.
  *
  * @param {number} customerID Identificador del cliente a actualizar.
  * @param {string} customerName Nombre del cliente.
@@ -221,17 +234,15 @@ export async function deleteCustomer(customerID) {
  * @param {string|null} websiteURL Sitio web o null.
  * @param {string} deliveryAddressLine1 Primera línea de dirección de entrega.
  * @param {string|null} deliveryAddressLine2 Segunda línea de dirección de entrega o null.
- * @param {number} deliveryCityID ID de la ciudad de entrega.
- * @param {string} deliveryPostalCode Código postal de entrega.
+ * @param {number} deliveryCityID ID compartido de la ciudad de entrega y postal.
+ * @param {string} deliveryPostalCode Código postal compartido para ambas direcciones.
  * @param {string} postalAddressLine1 Primera línea de dirección postal.
  * @param {string|null} postalAddressLine2 Segunda línea de dirección postal o null.
- * @param {number} postalCityID ID de la ciudad postal.
- * @param {string} postalPostalCode Código postal de la dirección postal.
  * @param {number|null} latitude Latitud o null.
  * @param {number|null} longitude Longitud o null.
  * @returns {Promise<void>} Finaliza cuando el procedimiento actualiza el cliente.
  */
-export async function updateCustomer(customerID, customerName, customerCategoryID, billToCustomerID, lastEditedBy, standardDiscountPercentage, creditLimit, isStatementSent, isOnCreditHold, buyingGroupID, primaryContactPersonID, alternateContactPersonID, deliveryMethodID, paymentDays, phoneNumber, faxNumber, websiteURL, deliveryAddressLine1, deliveryAddressLine2, deliveryCityID, deliveryPostalCode, postalAddressLine1, postalAddressLine2, postalCityID, postalPostalCode, latitude, longitude) {
+export async function updateCustomer(customerID, customerName, customerCategoryID, billToCustomerID, lastEditedBy, standardDiscountPercentage, creditLimit, isStatementSent, isOnCreditHold, buyingGroupID, primaryContactPersonID, alternateContactPersonID, deliveryMethodID, paymentDays, phoneNumber, faxNumber, websiteURL, deliveryAddressLine1, deliveryAddressLine2, deliveryCityID, deliveryPostalCode, postalAddressLine1, postalAddressLine2, latitude, longitude) {
     const connection = (await getPool()).request()
     connection.input('CustomerID', sql.Int, customerID)
     connection.input('CustomerName', sql.NVarChar, customerName)
@@ -256,8 +267,6 @@ export async function updateCustomer(customerID, customerName, customerCategoryI
     connection.input('DeliveryPostalCode', sql.NVarChar, deliveryPostalCode)
     connection.input('PostalAddressLine1', sql.NVarChar, postalAddressLine1)
     connection.input('PostalAddressLine2', sql.NVarChar, postalAddressLine2)
-    connection.input('PostalCityID', sql.Int, postalCityID)
-    connection.input('PostalPostalCode', sql.NVarChar, postalPostalCode)
     connection.input('Latitude', sql.Float, latitude)
     connection.input('Longitude', sql.Float, longitude)
     await connection.execute('Sales.UpdateCustomer')

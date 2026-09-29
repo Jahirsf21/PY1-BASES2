@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { listCustomers, listBillToCustomers, listCustomerCategories, listBuyingGroups, getCustomerById, getCustomerContactsById, getCustomerAddressById, addCustomer, removeCustomer, editCustomer } from '../controllers/customersController.js'
+import { listCustomers, listBillToCustomers, listCustomerCategories, listBuyingGroups, getCustomerById, getCustomerEditById, getCustomerContactsById, getCustomerAddressById, addCustomer, removeCustomer, editCustomer } from '../controllers/customersController.js'
 
 // Rutas de Clientes.
 const router = Router()
@@ -44,6 +44,11 @@ router.get('/customers/buying-groups', listBuyingGroups)
  */
 router.get('/customers/:customerID', getCustomerById)
 
+/**
+ * GET /customers/:customerID/edit
+ * Obtiene los datos editables y referencias del cliente.
+ */
+router.get('/customers/:customerID/edit', getCustomerEditById)
 /**
  * PUT /customers/:customerID
  * Actualiza todos los datos editables de un cliente.

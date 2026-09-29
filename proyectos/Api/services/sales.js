@@ -3,7 +3,8 @@ import sql from "mssql"
 
 /**
  * Obtiene una página de facturas junto con el total de registros.
- * Permite filtrar opcionalmente por número de factura, rango de fechas, nombre de cliente, método de entrega y rango de monto facturado.
+ * Permite filtrar opcionalmente por número de factura, rango de fechas, nombre de cliente,
+ * método de entrega y rango de monto facturado.
  *
  * @param {number|null} invoiceID Número de factura o null para no filtrar.
  * @param {string|null} invoiceDateFrom Fecha desde (YYYY-MM-DD) o null para no filtrar.
