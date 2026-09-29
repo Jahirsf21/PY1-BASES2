@@ -61,7 +61,7 @@ go
 create or alter procedure Application.GetEmployee
 as 
     begin
-        set nocount
+        set nocount on
         select 
             PersonID,
             FullName as NombreCompleto

@@ -335,7 +335,6 @@ go
     La ciudad y el código postal de entrega también actualizan los valores postales.
 */
 create or alter procedure Sales.UpdateCustomer
-create or alter procedure Sales.UpdateCustomer
     @CustomerID int,
     @CustomerName nvarchar(100),
     @CustomerCategoryID int,
