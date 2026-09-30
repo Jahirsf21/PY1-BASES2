@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { listPeople, listCities, listDeliveryMethods, listEmployees } from '../controllers/applicationController.js'
+import { listPeople, listCities, listDeliveryMethods, listEmployees, listSalespeople } from '../controllers/applicationController.js'
 
 // Rutas de Application (datos de referencia compartidos).
 const router = Router()
@@ -16,6 +16,12 @@ router.get('/people', listPeople)
  * Devuelve las personas registradas como empleados.
  */
 router.get('/employees', listEmployees)
+
+/**
+ * GET /salespeople
+ * Devuelve los vendedores disponibles para los formularios de facturas.
+ */
+router.get('/salespeople', listSalespeople)
 
 /**
  * GET /cities

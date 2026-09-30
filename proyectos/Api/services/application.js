@@ -71,3 +71,10 @@ export async function getEmployees() {
     const result = await connection.execute('Application.GetEmployee')
     return result.recordset
 }
+
+/** @returns {Promise<object[]>} Personas registradas como vendedores. */
+export async function getSalespeople() {
+    const connection = (await getPool()).request()
+    const result = await connection.execute('Application.GetSalespeople')
+    return result.recordset
+}

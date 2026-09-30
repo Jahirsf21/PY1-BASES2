@@ -85,7 +85,7 @@ export async function getSupplierAddress(supplierID) {
 /**
  * Inserta un proveedor mediante Purchasing.InsertSupplier.
  * Lanza 52003 si lastEditedBy no corresponde a un empleado válido.
- * Si no se indica un contacto alternativo, se utiliza el contacto principal.
+ * Requiere un contacto alternativo.
  * La ciudad y el código postal de entrega se guardan también como datos postales.
  *
  * @param {object} params Datos del proveedor.
@@ -94,7 +94,7 @@ export async function getSupplierAddress(supplierID) {
  * @param {number} params.lastEditedBy ID del empleado que registra el proveedor.
  * @param {string|null} params.supplierReference Código de referencia o null.
  * @param {number} params.primaryContactPersonID ID del contacto principal.
- * @param {number|null} params.alternateContactPersonID ID del contacto alternativo o null.
+ * @param {number} params.alternateContactPersonID ID del contacto alternativo.
  * @param {number} params.deliveryMethodID ID del método de entrega.
  * @param {number} params.paymentDays Plazo de pago en días.
  * @param {string} params.phoneNumber Número telefónico del proveedor.
@@ -123,7 +123,7 @@ export async function insertSupplier(params) {
     connection.input('LastEditedBy', sql.Int, params.lastEditedBy)
     connection.input('SupplierReference', sql.NVarChar, params.supplierReference ?? null)
     connection.input('PrimaryContactPersonID', sql.Int, params.primaryContactPersonID)
-    connection.input('AlternateContactPersonID', sql.Int, params.alternateContactPersonID ?? null)
+    connection.input('AlternateContactPersonID', sql.Int, params.alternateContactPersonID)
     connection.input('DeliveryMethodID', sql.Int, params.deliveryMethodID)
     connection.input('PaymentDays', sql.Int, params.paymentDays)
     connection.input('PhoneNumber', sql.NVarChar, params.phoneNumber)
@@ -165,7 +165,7 @@ export async function getSupplierForEdit(supplierID) {
 /**
  * Actualiza un proveedor mediante Purchasing.UpdateSupplier.
  * Lanza 52000 si no existe y 52003 si lastEditedBy no es un empleado válido.
- * Si no se indica un contacto alternativo, se utiliza el contacto principal.
+ * Requiere un contacto alternativo.
  * La ciudad y el código postal de entrega también actualizan los datos postales.
  *
  * @param {number} supplierID Identificador del proveedor a actualizar.
@@ -175,7 +175,7 @@ export async function getSupplierForEdit(supplierID) {
  * @param {number} params.lastEditedBy ID del empleado que realiza el cambio.
  * @param {string|null} params.supplierReference Código de referencia o null.
  * @param {number} params.primaryContactPersonID ID del contacto principal.
- * @param {number|null} params.alternateContactPersonID ID del contacto alternativo o null.
+ * @param {number} params.alternateContactPersonID ID del contacto alternativo.
  * @param {number} params.deliveryMethodID ID del método de entrega.
  * @param {number} params.paymentDays Plazo de pago en días.
  * @param {string} params.phoneNumber Número telefónico del proveedor.
@@ -205,7 +205,7 @@ export async function updateSupplier(supplierID, params) {
     connection.input('LastEditedBy', sql.Int, params.lastEditedBy)
     connection.input('SupplierReference', sql.NVarChar, params.supplierReference ?? null)
     connection.input('PrimaryContactPersonID', sql.Int, params.primaryContactPersonID)
-    connection.input('AlternateContactPersonID', sql.Int, params.alternateContactPersonID ?? null)
+    connection.input('AlternateContactPersonID', sql.Int, params.alternateContactPersonID)
     connection.input('DeliveryMethodID', sql.Int, params.deliveryMethodID)
     connection.input('PaymentDays', sql.Int, params.paymentDays)
     connection.input('PhoneNumber', sql.NVarChar, params.phoneNumber)

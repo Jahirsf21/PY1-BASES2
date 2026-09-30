@@ -1,4 +1,5 @@
 import { paginatedResponse } from '../helpers/paginatedResponse.js'
+import { validateCustomer } from '../helpers/entityValidation.js'
 import { getBillToCustomers, getBuyingGroups, getCustomerAddress, getCustomerCategories, getCustomerContacts, getCustomerDetail, getCustomerForEdit, getCustomers, insertCustomer, deleteCustomer, updateCustomer } from '../services/customers.js'
 
 /**
@@ -25,7 +26,7 @@ export async function listCustomers(req, res) {
         const result = await getCustomers(customerName, customerCategoryID, deliveryMethodID, pageNumber, pageSize)
         return paginatedResponse(res, pageNumber, pageSize, result)
     } catch (error) {
-        res.status(500).json({message: 'Error al obtener clientes'})
+        return res.status(500).json({message: 'Error al obtener clientes'})
     }
 }
 
@@ -51,7 +52,7 @@ export async function listBillToCustomers(req, res) {
         const result = await getBillToCustomers(customerName, pageNumber, pageSize)
         return paginatedResponse(res, pageNumber, pageSize, result)
     } catch (error) {
-        res.status(500).json({message: 'Error al obtener clientes para facturar'})
+        return res.status(500).json({message: 'Error al obtener clientes para facturar'})
     }
 }
 
@@ -68,7 +69,7 @@ export async function listCustomerCategories(req, res) {
         const categories = await getCustomerCategories()
         return res.json(categories)
     } catch (error) {
-        res.status(500).json({message: 'Error al obtener categorías de cliente'})
+        return res.status(500).json({message: 'Error al obtener categorías de cliente'})
     }
 }
 
@@ -85,7 +86,7 @@ export async function listBuyingGroups(req, res) {
         const groups = await getBuyingGroups()
         return res.json(groups)
     } catch (error) {
-        res.status(500).json({message: 'Error al obtener los grupos de compra'})
+        return res.status(500).json({message: 'Error al obtener los grupos de compra'})
     }
 }
 
@@ -102,12 +103,12 @@ export async function getCustomerById(req, res) {
     try {
         const customerID = parseInt(req.params.customerID, 10)
         const customer = await getCustomerDetail(customerID)
-        if (!customer) {
+        if (customer.length === 0) {
             return res.status(404).json({message: 'Cliente no encontrado'})
         }
         return res.json(customer)
     } catch (error) {
-        res.status(500).json({message: 'Error al obtener al cliente'})
+        return res.status(500).json({message: 'Error al obtener al cliente'})
     }
 }
 
@@ -119,8 +120,8 @@ export async function getCustomerById(req, res) {
  * @returns {Promise<import('express').Response>} Datos del formulario o 404.
  */
 export async function getCustomerEditById(req, res) {
-    const customerID = Number(req.params.customerID)
     try {
+        const customerID = parseInt(req.params.customerID, 10)
         const customer = await getCustomerForEdit(customerID)
         if (customer.length === 0) {
             return res.status(404).json({message: 'Cliente no encontrado'})
@@ -143,12 +144,12 @@ export async function getCustomerContactsById(req, res) {
     try {
         const customerID = parseInt(req.params.customerID, 10)
         const contacts = await getCustomerContacts(customerID)
-        if (!contacts) {
+        if (contacts.length === 0) {
             return res.status(404).json({message: 'Contactos no encontrados'})
         }
         return res.json(contacts)
     } catch (error) {
-        res.status(500).json({message: 'Error al obtener los contactos del cliente'})
+        return res.status(500).json({message: 'Error al obtener los contactos del cliente'})
     }
 }
 
@@ -164,12 +165,12 @@ export async function getCustomerAddressById(req, res) {
     try {
         const customerID = parseInt(req.params.customerID, 10)
         const address = await getCustomerAddress(customerID)
-        if (!address) {
+        if (address.length === 0) {
             return res.status(404).json({message: 'Direccion no encontrada'})
         }
         return res.json(address)
     } catch (error) {
-        res.status(500).json({message: 'Error al obtener la dirección del cliente'})
+        return res.status(500).json({message: 'Error al obtener la dirección del cliente'})
     }
 }
 
@@ -186,20 +187,12 @@ export async function addCustomer(req, res) {
     if (!customer || typeof customer !== 'object' || Array.isArray(customer)) {
         return res.status(400).json({message: 'El cuerpo de la solicitud debe contener los datos del cliente'})
     }
-    const requiredFields = [
-        'customerName', 'customerCategoryID', 'lastEditedBy',
-        'primaryContactPersonID', 'deliveryMethodID', 'paymentDays', 'phoneNumber',
-        'deliveryAddressLine1', 'deliveryCityID', 'deliveryPostalCode',
-        'postalAddressLine1',
-    ]
-    const missingFields = requiredFields.filter((field) => {
-        const value = customer[field]
-        return value === undefined || value === null || (typeof value === 'string' && value.trim() === '')
-    })
-    if (missingFields.length > 0) {
+    const {fields, errors} = validateCustomer(customer)
+    if (fields.length > 0) {
         return res.status(400).json({
-            message: 'Faltan campos obligatorios para crear el cliente',
-            fields: missingFields,
+            message: `Datos inválidos del cliente: ${errors[fields[0]]}`,
+            fields,
+            errors,
         })
     }
     try {
@@ -248,8 +241,7 @@ export async function addCustomer(req, res) {
  * @returns {Promise<import('express').Response>} Respuesta sin contenido al eliminarlo.
  */
 export async function removeCustomer(req, res) {
-    const {customerID: id} = req.params
-    const customerID = Number(id)
+    const customerID = Number(req.params.customerID)
     try {
         await deleteCustomer(customerID)
         return res.status(204).send()
@@ -274,24 +266,14 @@ export async function removeCustomer(req, res) {
  * @returns {Promise<import('express').Response>} Confirmación de la actualización.
  */
 export async function editCustomer(req, res) {
-    const {customerID: id} = req.params
-    const customerID = Number(id)
+    const customerID = Number(req.params.customerID)
     const customer = req.body
     if (!customer || typeof customer !== 'object' || Array.isArray(customer)) {
         return res.status(400).json({message: 'El cuerpo de la solicitud debe contener los datos del cliente'})
     }
-    const requiredFields = [
-        'customerName', 'customerCategoryID', 'billToCustomerID', 'lastEditedBy',
-        'primaryContactPersonID', 'deliveryMethodID', 'paymentDays', 'phoneNumber',
-        'deliveryAddressLine1', 'deliveryCityID', 'deliveryPostalCode',
-        'postalAddressLine1',
-    ]
-    const missingFields = requiredFields.filter((field) => {
-        const value = customer[field]
-        return value === undefined || value === null || (typeof value === 'string' && value.trim() === '')
-    })
-    if (missingFields.length > 0) {
-        return res.status(400).json({message: 'Faltan campos obligatorios para actualizar el cliente', fields: missingFields})
+    const {fields, errors} = validateCustomer(customer, true)
+    if (fields.length > 0) {
+        return res.status(400).json({message: `Datos inválidos del cliente: ${errors[fields[0]]}`, fields, errors})
     }
     try {
         await updateCustomer(

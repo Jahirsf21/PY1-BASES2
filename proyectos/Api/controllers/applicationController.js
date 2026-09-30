@@ -1,5 +1,5 @@
 import { paginatedResponse } from '../helpers/paginatedResponse.js'
-import { getPeople, getCities, getDeliveryMethods, getEmployees } from '../services/application.js'
+import { getPeople, getCities, getDeliveryMethods, getEmployees, getSalespeople } from '../services/application.js'
 
 /**
  * Obtiene una página de personas, opcionalmente filtradas por nombre.
@@ -22,7 +22,7 @@ export async function listPeople(req, res) {
         const result = await getPeople(fullName, pageNumber, pageSize)
         return paginatedResponse(res, pageNumber, pageSize, result)
     } catch (error) {
-        res.status(500).json({message: 'Error al obtener personas'})
+        return res.status(500).json({message: 'Error al obtener personas'})
     }
 }
 
@@ -49,7 +49,7 @@ export async function listCities(req, res) {
         const result = await getCities(cityName, provinceName, countryName, pageNumber, pageSize)
         return paginatedResponse(res, pageNumber, pageSize, result)
     } catch (error) {
-        res.status(500).json({message: 'Error al obtener ciudades'})
+        return res.status(500).json({message: 'Error al obtener ciudades'})
     }
 }
 
@@ -66,7 +66,7 @@ export async function listDeliveryMethods(req, res) {
         const methods = await getDeliveryMethods()
         return res.json(methods)
     } catch (error) {
-        res.status(500).json({message: 'Error al obtener los métodos de entrega'})
+        return res.status(500).json({message: 'Error al obtener los métodos de entrega'})
     }
 }
 
@@ -83,5 +83,21 @@ export async function listEmployees(req, res) {
         return res.json(employees)
     } catch (error) {
         return res.status(500).json({message: 'Error al obtener empleados'})
+    }
+}
+
+/**
+ * Obtiene los vendedores disponibles para las facturas.
+ *
+ * @param {import('express').Request} req Petición HTTP.
+ * @param {import('express').Response} res Respuesta HTTP.
+ * @returns {Promise<import('express').Response>} Respuesta JSON con los vendedores.
+ */
+export async function listSalespeople(req, res) {
+    try {
+        const salespeople = await getSalespeople()
+        return res.json(salespeople)
+    } catch (error) {
+        return res.status(500).json({message: 'Error al obtener vendedores'})
     }
 }
