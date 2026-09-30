@@ -24,8 +24,8 @@ as
 go
 
 /*
-    Obtiene las personas paginadas, opcionalmente filtradas por nombre.
-    Si @FullName es NULL o vacío, devuelve todas las personas.
+    Obtiene personas de contacto paginadas (excluye empleados, vendedores y la persona 1),
+    opcionalmente filtradas por nombre.
     Incluye el total de registros (TotalCount) para calcular la paginación en el cliente.
     Devuelve: PersonID, NombreCompleto
 */
@@ -38,7 +38,8 @@ as
     begin
         set nocount on
         select @TotalCount = count(*) from People
-        where @FullName is null or FullName like '%' + @FullName + '%'
+        where (@FullName is null or FullName like '%' + @FullName + '%')
+          and IsEmployee = 0 and IsSalesperson = 0 and PersonID != 1
         select
             PersonID,
             FullName as NombreCompleto
@@ -68,6 +69,18 @@ as
         from People
         where IsEmployee = 1
     end
+go
+
+/* Obtiene los vendedores disponibles para asignar a las facturas. */
+create or alter procedure Application.GetSalespeople
+as
+begin
+    set nocount on
+    select PersonID, FullName as NombreCompleto
+    from People
+    where IsSalesperson = 1
+    order by FullName
+end
 go
 
 /*

@@ -99,18 +99,109 @@ as
             sih.QuantityOnHand as CantidadDisponible,
             sih.BinLocation as Ubicacion
         from StockItems si
-        left join Suppliers sp on si.SupplierID = sp.SupplierID
+        inner join Suppliers sp on si.SupplierID = sp.SupplierID
         left join Colors co on si.ColorID = co.ColorID
-        left join PackageTypes pu on si.UnitPackageID = pu.PackageTypeID
-        left join PackageTypes po on si.OuterPackageID = po.PackageTypeID
-        left join StockItemHoldings sih on si.StockItemID = sih.StockItemID
+        inner join PackageTypes pu on si.UnitPackageID = pu.PackageTypeID
+        inner join PackageTypes po on si.OuterPackageID = po.PackageTypeID
+        inner join StockItemHoldings sih on si.StockItemID = sih.StockItemID
         where si.StockItemID = @StockItemID
     end
 go
 
 /*
+    Obtiene todos los grupos asociados a un producto mediante StockItemStockGroups.
+    Devuelve: StockGroupID, NombreGrupoProducto.
+*/
+create or alter procedure Warehouse.GetStockItemStockGroups
+    @StockItemID int
+as
+    begin
+        set nocount on
+        select
+            sg.StockGroupID,
+            sg.StockGroupName as NombreGrupoProducto
+        from StockItemStockGroups sig
+        inner join StockGroups sg on sg.StockGroupID = sig.StockGroupID
+        where sig.StockItemID = @StockItemID
+    end
+go
+
+/* Obtiene los valores editables del producto */
+create or alter procedure Warehouse.GetStockItemForEdit
+    @StockItemID int
+as
+    begin
+        set nocount on
+        select
+            si.StockItemID,
+            si.StockItemName,
+            si.SupplierID,
+            sp.SupplierName,
+            si.LastEditedBy,
+            si.LeadTimeDays,
+            si.IsChillerStock,
+            si.ColorID,
+            co.ColorName,
+            si.UnitPackageID,
+            pu.PackageTypeName as UnitPackageName,
+            si.OuterPackageID,
+            po.PackageTypeName as OuterPackageName,
+            si.Brand,
+            si.Size,
+            si.QuantityPerOuter,
+            si.Barcode,
+            si.TaxRate,
+            si.UnitPrice,
+            si.RecommendedRetailPrice,
+            si.TypicalWeightPerUnit,
+            sih.LastCostPrice,
+            sih.ReorderLevel,
+            sih.TargetStockLevel,
+            sih.QuantityOnHand,
+            sih.BinLocation
+        from StockItems si
+        inner join Suppliers sp on sp.SupplierID = si.SupplierID
+        left join Colors co on co.ColorID = si.ColorID
+        inner join PackageTypes pu on pu.PackageTypeID = si.UnitPackageID
+        inner join PackageTypes po on po.PackageTypeID = si.OuterPackageID
+        inner join StockItemHoldings sih on sih.StockItemID = si.StockItemID
+        where si.StockItemID = @StockItemID
+    end
+go
+
+/*
+    Obtiene los colores disponibles para asignar a un producto.
+    Devuelve: ColorID, ColorName.
+*/
+create or alter procedure Warehouse.GetColors
+as
+    begin
+        set nocount on
+        select
+            ColorID,
+            ColorName
+        from Colors
+    end
+go
+
+/*
+    Obtiene los tipos de empaque disponibles para asignar a un producto.
+    Devuelve: PackageTypeID, PackageTypeName.
+*/
+create or alter procedure Warehouse.GetPackageTypes
+as
+    begin
+        set nocount on
+        select
+            PackageTypeID,
+            PackageTypeName
+        from PackageTypes
+    end
+go
+
+/*
    Inserta un nuevo producto en las tablas StockItems, StockItemHoldings y
-   StockItemStockGroups. Recibe datos generales, existencias iniciales y grupo del
+   StockItemStockGroups. Recibe datos generales, existencias iniciales y grupos del
    producto; devuelve el StockItemID generado a través de @NewStockItemID.
 */
 create or alter procedure Warehouse.InsertStockItem
@@ -133,7 +224,7 @@ create or alter procedure Warehouse.InsertStockItem
     @UnitPrice decimal(18, 2),
     @RecommendedRetailPrice decimal(18, 2) = null,
     @TypicalWeightPerUnit decimal(18, 3) = null,
-    @StockGroupID int,
+    @StockGroupIDsJson nvarchar(max),
     @QuantityOnHand int = 0,
     @BinLocation nvarchar(20) = null,
     @NewStockItemID int output
@@ -161,7 +252,8 @@ as
                 values (@NewStockItemID, @QuantityOnHand, coalesce(@BinLocation,N''), 0,
                         @LastCostPrice, @ReorderLevel, @TargetStockLevel, @LastEditedBy)
                 insert into StockItemStockGroups (StockItemID, StockGroupID, LastEditedBy)
-                values (@NewStockItemID, @StockGroupID, @LastEditedBy)
+                select @NewStockItemID, g.[value], @LastEditedBy
+                from openjson(@StockGroupIDsJson) g
             commit transaction
             print 'Producto insertado correctamente. Nuevo StockItemID = ' + cast(@NewStockItemID as varchar(20)) + ' (' + @StockItemName + ')';
         end try
@@ -175,8 +267,8 @@ go
 
 /*
    Actualiza un producto existente en StockItems, StockItemHoldings y
-   StockItemStockGroups. Si el producto no existe, lanza error 53000. El grupo del
-   producto se reemplaza por el nuevo @StockGroupID.
+   StockItemStockGroups. Si el producto no existe, lanza error 53000. Los grupos del
+   producto se reemplazan por los recibidos en @StockGroupIDsJson.
 
 */
 create or alter procedure Warehouse.UpdateStockItem
@@ -200,7 +292,7 @@ create or alter procedure Warehouse.UpdateStockItem
     @UnitPrice decimal(18, 2),
     @RecommendedRetailPrice decimal(18, 2) = null,
     @TypicalWeightPerUnit decimal(18, 3) = null,
-    @StockGroupID int,
+    @StockGroupIDsJson nvarchar(max),
     @QuantityOnHand int,
     @BinLocation nvarchar(20) = null
 as
@@ -232,6 +324,9 @@ as
                 update StockItemHoldings
                 set QuantityOnHand = @QuantityOnHand,
                     BinLocation = coalesce(@BinLocation,N''),
+                    LastCostPrice = @LastCostPrice,
+                    ReorderLevel = @ReorderLevel,
+                    TargetStockLevel = @TargetStockLevel,
                     LastEditedBy = @LastEditedBy
                 where StockItemID = @StockItemID
                 if @@rowcount = 0
@@ -244,7 +339,8 @@ as
                 where StockItemID = @StockItemID
 
                 insert into StockItemStockGroups (StockItemID, StockGroupID, LastEditedBy)
-                values (@StockItemID, @StockGroupID, @LastEditedBy)
+                select @StockItemID, g.[value], @LastEditedBy
+                from openjson(@StockGroupIDsJson) g
             commit transaction
             print 'Producto actualizado correctamente. StockItemID = ' + cast(@StockItemID as varchar(20)) + ' (' + @StockItemName + ')';
         end try

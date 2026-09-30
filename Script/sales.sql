@@ -88,16 +88,44 @@ as
             iv.DeliveryInstructions as InstruccionesEntrega
         from Invoices iv
         inner join Customers cs on iv.CustomerID = cs.CustomerID
-        left join DeliveryMethods dv on iv.DeliveryMethodID = dv.DeliveryMethodID
-        left join People cp on iv.ContactPersonID = cp.PersonID
-        left join People sp on iv.SalespersonPersonID = sp.PersonID
+        inner join DeliveryMethods dv on iv.DeliveryMethodID = dv.DeliveryMethodID
+        inner join People cp on iv.ContactPersonID = cp.PersonID
+        inner join People sp on iv.SalespersonPersonID = sp.PersonID
         where iv.InvoiceID = @InvoiceID
     end
 go
 
 /*
+    Devuelve los valores editables de la factura.
+*/
+create or alter procedure Sales.GetInvoiceForEdit
+    @InvoiceID int
+as
+begin
+    set nocount on
+    select iv.InvoiceID, iv.CustomerID, cs.CustomerName,
+           iv.BillToCustomerID, bill.CustomerName as BillToCustomerName,
+           iv.DeliveryMethodID, iv.ContactPersonID, cp.FullName as ContactPersonName,
+           iv.AccountsPersonID, ap.FullName as AccountsPersonName,
+           iv.PackedByPersonID, pp.FullName as PackedByPersonName,
+           iv.LastEditedBy, ed.FullName as LastEditorName,
+           iv.SalespersonPersonID, sp.FullName as SalespersonName,
+           iv.CustomerPurchaseOrderNumber, iv.InvoiceDate, iv.DeliveryInstructions
+    from Invoices iv
+    join Customers cs on cs.CustomerID = iv.CustomerID
+    join Customers bill on bill.CustomerID = iv.BillToCustomerID
+    inner join People cp on cp.PersonID = iv.ContactPersonID
+    inner join People ap on ap.PersonID = iv.AccountsPersonID
+    inner join People pp on pp.PersonID = iv.PackedByPersonID
+    inner join People ed on ed.PersonID = iv.LastEditedBy
+    inner join People sp on sp.PersonID = iv.SalespersonPersonID
+    where iv.InvoiceID = @InvoiceID
+end
+go
+
+/*
     Obtiene las líneas de detalle (productos) de una factura específica.
-    Devuelve: nombreProducto, cantidad, precioUnitario, impuestoAplicado, montoImpuesto, totalLinea
+    Devuelve: StockItemID, nombreProducto, cantidad, precioUnitario, impuestoAplicado, montoImpuesto, totalLinea
 */
 create or alter procedure Sales.GetInvoiceLines
     @InvoiceID int
@@ -105,6 +133,7 @@ as
     begin
         set nocount on
         select
+            ivl.StockItemID,
             si.StockItemName as NombreProducto,
             ivl.Quantity as Cantidad,
             ivl.UnitPrice as PrecioUnitario,
