@@ -38,8 +38,9 @@ as
     begin
         set nocount on
         select @TotalCount = count(*) from People
-        where (@FullName is null or FullName like '%' + @FullName + '%')
-          and IsEmployee = 0 and IsSalesperson = 0 and PersonID != 1
+        where 
+            (@FullName is null or FullName like '%' + @FullName + '%')
+            and IsEmployee = 0 and IsSalesperson = 0 and PersonID != 1
         select
             PersonID,
             FullName as NombreCompleto

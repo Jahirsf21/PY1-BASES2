@@ -72,3 +72,9 @@ go
 drop synonym if exists dbo.StateProvinces;
 create synonym dbo.StateProvinces for Application.StateProvinces;
 go
+drop synonym if exists dbo.PurchaseOrders;
+create synonym dbo.PurchaseOrders for Purchasing.PurchaseOrders;
+go
+drop synonym if exists dbo.PurchaseOrderLines;
+create synonym dbo.PurchaseOrderLines for Purchasing.PurchaseOrderLines;
+go

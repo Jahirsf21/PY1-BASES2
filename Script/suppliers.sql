@@ -206,6 +206,19 @@ as
 go
 
 /*
+    Devuelve los años distintos en los que se registraron órdenes de compra.
+    Devuelve: Año
+*/
+create or alter procedure Purchasing.GetPurchaseYears
+as
+	begin
+		set nocount on
+		select distinct year(OrderDate) as Año
+		from PurchaseOrders
+	end
+go
+
+/*
    Inserta un nuevo proveedor en la tabla Suppliers. Recibe todos los datos obligatorios
    y opcionales del proveedor, maneja valores por defecto (fax, web, ubicación geográfica),
    valida que @LastEditedBy corresponda a un empleado existente, y devuelve el SupplierID

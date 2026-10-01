@@ -33,11 +33,12 @@ as
             inner join Customers cs on iv.CustomerID = cs.CustomerID
             inner join DeliveryMethods dv on iv.DeliveryMethodID = dv.DeliveryMethodID
             inner join InvoiceLines ivl on iv.InvoiceID = ivl.InvoiceID
-            where (@InvoiceID is null or iv.InvoiceID = @InvoiceID)
-              and (@InvoiceDateFrom  is null or iv.InvoiceDate >= @InvoiceDateFrom)
-              and (@InvoiceDateTo is null or iv.InvoiceDate < dateadd(day, 1, @InvoiceDateTo))
-              and (@CustomerName  is null or cs.CustomerName like '%' + @CustomerName + '%')
-              and (@DeliveryMethodID is null or iv.DeliveryMethodID = @DeliveryMethodID)
+            where 
+                (@InvoiceID is null or iv.InvoiceID = @InvoiceID)
+                and (@InvoiceDateFrom  is null or iv.InvoiceDate >= @InvoiceDateFrom)
+                and (@InvoiceDateTo is null or iv.InvoiceDate < dateadd(day, 1, @InvoiceDateTo))
+                and (@CustomerName  is null or cs.CustomerName like '%' + @CustomerName + '%')
+                and (@DeliveryMethodID is null or iv.DeliveryMethodID = @DeliveryMethodID)
             group by iv.InvoiceID
             having (@MinInvoiceAmount is null or sum(ivl.ExtendedPrice) >= @MinInvoiceAmount)
                and (@MaxInvoiceAmount is null or sum(ivl.ExtendedPrice) <= @MaxInvoiceAmount)
@@ -53,7 +54,8 @@ as
         inner join Customers cs on iv.CustomerID = cs.CustomerID
         inner join DeliveryMethods dv on iv.DeliveryMethodID = dv.DeliveryMethodID
         inner join InvoiceLines ivl on iv.InvoiceID = ivl.InvoiceID
-        where (@InvoiceID is null or iv.InvoiceID = @InvoiceID)
+        where 
+            (@InvoiceID is null or iv.InvoiceID = @InvoiceID)
             and (@InvoiceDateFrom  is null or iv.InvoiceDate >= @InvoiceDateFrom)
             and (@InvoiceDateTo is null or iv.InvoiceDate < dateadd(day, 1, @InvoiceDateTo))
             and (@CustomerName  is null or cs.CustomerName like '%' + @CustomerName + '%')
@@ -145,6 +147,19 @@ as
         where ivl.InvoiceID = @InvoiceID
         order by ivl.InvoiceLineID
     end
+go
+
+/*
+    Devuelve los años distintos en los que se registraron facturas.
+    Devuelve: Año
+*/
+create or alter procedure Sales.GetInvoiceYears
+as
+	begin
+		set nocount on
+		select distinct year(InvoiceDate) as Año
+		from Invoices
+	end
 go
 
 /*
