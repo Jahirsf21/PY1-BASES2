@@ -1,11 +1,4 @@
-/** Respuesta estándar para los endpoints que devuelven datos paginados. */
-export interface PaginatedResponse<T> {
-  page: number
-  size: number
-  totalCount: number
-  totalPages: number
-  data: T[]
-}
+import type { PaginatedResponse } from './paginatedResponse'
 
 /** Cliente mostrado en el listado principal de clientes. */
 export interface Customer {
@@ -71,8 +64,8 @@ export interface CustomerAddress {
   ProvinciaPostal: string
   PaisPostal: string
   CodigoPostalPostal: string
-  Latitud: number
-  Longitud: number
+  Latitud: number | null
+  Longitud: number | null
 }
 
 /** Filtros disponibles para consultar el listado de clientes. */
@@ -92,3 +85,64 @@ export type CustomersResponse = PaginatedResponse<Customer>
 
 /** Respuesta paginada de clientes disponibles para facturación. */
 export type BillToCustomersResponse = PaginatedResponse<BillToCustomer>
+
+/** Datos enviados al crear o actualizar un cliente. */
+export interface NewCustomer {
+  customerName: string
+  customerCategoryID: number
+  billToCustomerID?: number | null
+  lastEditedBy: number
+  primaryContactPersonID: number
+  deliveryMethodID: number
+  paymentDays: number
+  phoneNumber: string
+  deliveryAddressLine1: string
+  deliveryCityID: number
+  deliveryPostalCode: string
+  postalAddressLine1: string
+  standardDiscountPercentage?: number
+  creditLimit?: number | null
+  isStatementSent?: boolean
+  isOnCreditHold?: boolean
+  buyingGroupID?: number | null
+  alternateContactPersonID?: number | null
+  faxNumber?: string | null
+  websiteURL?: string | null
+  deliveryAddressLine2?: string | null
+  postalAddressLine2?: string | null
+  latitude?: number | null
+  longitude?: number | null
+}
+
+/** Respuesta de Sales.GetCustomerForEdit para precargar la edición. */
+export interface CustomerEdit {
+  CustomerID: number
+  NombreCliente: string
+  CustomerCategoryID: number
+  BillToCustomerID: number
+  NombreClientePorFacturar: string
+  LastEditedBy: number
+  PorcentajeDescuentoEstandar: number
+  LimiteCredito: number | null
+  EnviarEstadoCuenta: boolean
+  CreditoSuspendido: boolean
+  BuyingGroupID: number | null
+  PrimaryContactPersonID: number
+  NombreContactoPrincipal: string
+  AlternateContactPersonID: number | null
+  NombreContactoAlternativo: string | null
+  DeliveryMethodID: number
+  DiasGraciaPago: number
+  Telefono: string
+  Fax: string | null
+  SitioWeb: string | null
+  DireccionEntrega1: string
+  DireccionEntrega2: string | null
+  DeliveryCityID: number
+  CiudadEntrega: string
+  CodigoPostalEntrega: string
+  DireccionPostal1: string
+  DireccionPostal2: string | null
+  Latitud: number | null
+  Longitud: number | null
+}

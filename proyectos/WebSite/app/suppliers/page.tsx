@@ -2,14 +2,18 @@
 
 import type { SubmitEvent } from 'react'
 import { useEffect, useState } from 'react'
-import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, RotateCcwIcon, SearchIcon } from 'lucide-react'
+import Link from 'next/link'
+import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, PlusIcon, RotateCcwIcon, SearchIcon, Trash2Icon } from 'lucide-react'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { toast } from '@/components/ui/toast'
 import { getDeliveryMethods } from '@/app/api/application'
-import { getSupplierCategories, getSuppliers } from '@/app/api/suppliers'
+import { deleteSupplierByID, getSupplierCategories, getSuppliers } from '@/app/api/suppliers'
 import type { DeliveryMethod } from '@/lib/types/deliveryMethods'
 import type { SupplierCategory, SupplierFilters, SuppliersResponse } from '@/lib/types/suppliers'
 
@@ -32,23 +36,30 @@ export default function SuppliersPage() {
   const [deliveryMethods, setDeliveryMethods] = useState<DeliveryMethod[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedSupplierID, setSelectedSupplierID] = useState<number | null>(null)
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
+    let cancelled = false
+
     async function loadData() {
       setIsLoading(true)
       setError(null)
       try {
         const suppliersData = await getSuppliers(filters.supplierName, filters.supplierCategoryID, filters.deliveryMethodID, pageNumber, PAGE_SIZE)
-        setSuppliersResponse(suppliersData)
+        if (!cancelled) setSuppliersResponse(suppliersData)
       } catch (error) {
-        setError(error instanceof Error ? error.message : 'No fue posible obtener los proveedores')
+        if (!cancelled) setError(error instanceof Error ? error.message : 'No fue posible obtener los proveedores')
       } finally {
-        setIsLoading(false)
+        if (!cancelled) setIsLoading(false)
       }
     }
 
     void loadData()
-  }, [filters, pageNumber])
+    return () => { cancelled = true }
+  }, [filters, pageNumber, refreshKey])
 
   useEffect(() => {
     getSupplierCategories().then(setCategories).catch(() => {})
@@ -57,11 +68,15 @@ export default function SuppliersPage() {
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (isDeleting) return
+    clearSelection()
     setFilters({ supplierName, supplierCategoryID, deliveryMethodID })
     setPageNumber(1)
   }
 
   function resetFilters() {
+    if (isDeleting) return
+    clearSelection()
     setSupplierName('')
     setSupplierCategoryID(null)
     setDeliveryMethodID(null)
@@ -72,12 +87,68 @@ export default function SuppliersPage() {
   const suppliers = suppliersResponse?.data ?? []
   const totalPages = suppliersResponse?.totalPages ?? 0
   const totalCount = suppliersResponse?.totalCount ?? 0
+  const selectedSupplier = suppliers.find((supplier) => supplier.SupplierID === selectedSupplierID) ?? null
+
+  function clearSelection() {
+    setSelectedSupplierID(null)
+    setIsConfirmingDelete(false)
+  }
+
+  function toggleSupplier(supplierID: number) {
+    if (isLoading || isDeleting) return
+    if (selectedSupplierID === supplierID) {
+      clearSelection()
+      return
+    }
+    setSelectedSupplierID(supplierID)
+    setIsConfirmingDelete(false)
+  }
+
+  function changePage(page: number) {
+    clearSelection()
+    setPageNumber(page)
+  }
 
   function handlePageSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     const page = Number(new FormData(event.currentTarget).get('pageNumber'))
-    if (Number.isInteger(page) && page >= 1 && page <= totalPages) {
-      setPageNumber(page)
+    if (!isLoading && !isDeleting && Number.isInteger(page) && page >= 1 && page <= totalPages) {
+      changePage(page)
+    }
+  }
+
+  async function handleDeleteSupplier() {
+    if (!selectedSupplier || !isConfirmingDelete || isLoading || isDeleting) return
+
+    setIsDeleting(true)
+    try {
+      await deleteSupplierByID(selectedSupplier.SupplierID)
+      setSuppliersResponse((previous) => previous ? {
+        ...previous,
+        data: previous.data.filter((supplier) => supplier.SupplierID !== selectedSupplier.SupplierID),
+        totalCount: Math.max(0, previous.totalCount - 1),
+        totalPages: Math.ceil(Math.max(0, previous.totalCount - 1) / PAGE_SIZE),
+      } : null)
+      clearSelection()
+      toast.add({ type: 'success', title: 'Proveedor eliminado', description: `Se eliminó el proveedor ${selectedSupplier.NombreProveedor}.` })
+      setIsLoading(true)
+
+      if (suppliers.length === 1 && pageNumber > 1) {
+        setPageNumber(pageNumber - 1)
+      } else {
+        setRefreshKey((key) => key + 1)
+      }
+    } catch (error) {
+      setIsConfirmingDelete(false)
+      toast.add({
+        type: 'error',
+        title: 'No se pudo eliminar el proveedor',
+        description: error instanceof Error ? error.message : 'No fue posible eliminar el proveedor',
+        priority: 'high',
+        timeout: 8000,
+      })
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -85,10 +156,13 @@ export default function SuppliersPage() {
     <main className="flex min-w-0 flex-1 bg-muted/30">
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 sm:gap-6 sm:px-8 sm:py-8">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <h1 className="text-2xl font-semibold tracking-tight">Proveedores</h1>
-          <p className="text-sm text-muted-foreground">
-            {totalCount} {totalCount === 1 ? 'Proveedor' : 'Proveedores'}
-          </p>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Proveedores</h1>
+            <p className="text-sm text-muted-foreground">{totalCount} {totalCount === 1 ? 'Proveedor' : 'Proveedores'}</p>
+          </div>
+          <Button nativeButton={false} render={<Link href="/suppliers/new" />}>
+            <PlusIcon data-icon="inline-start" /> Nuevo proveedor
+          </Button>
         </div>
 
         <div className="rounded-lg border bg-card p-4 shadow-sm">
@@ -99,6 +173,7 @@ export default function SuppliersPage() {
                 id="supplierName"
                 placeholder="Buscar por nombre"
                 value={supplierName}
+                disabled={isDeleting}
                 onChange={(event) => setSupplierName(event.target.value)}
               />
             </div>
@@ -109,21 +184,24 @@ export default function SuppliersPage() {
                 <DropdownMenuTrigger
                   id="supplierCategory"
                   type="button"
+                  disabled={isDeleting}
                   className="flex h-8 w-full items-center justify-between gap-2 rounded-lg border border-input bg-transparent px-2.5 text-left text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
                 >
                   <span className="min-w-0 truncate">
-                    {categories.find((category) => category.SupplierCategoryID === supplierCategoryID)?.NombreCategoriaProveedor ?? 'Todas las categorías'}
+                    {supplierCategoryID === null ? 'Todas las categorías' : categories.find((category) => category.SupplierCategoryID === supplierCategoryID)?.NombreCategoriaProveedor ?? 'Categoría seleccionada'}
                   </span>
                   <ChevronDownIcon className="size-4 shrink-0" aria-hidden="true" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="max-w-[calc(100vw-2rem)]">
-                  <DropdownMenuRadioGroup
-                    value={supplierCategoryID === null ? '' : String(supplierCategoryID)}
-                    onValueChange={(value) => setSupplierCategoryID(value === '' ? null : Number(value))}
-                  >
-                    <DropdownMenuRadioItem value="" closeOnClick>Todas las categorías</DropdownMenuRadioItem>
+                  <DropdownMenuRadioGroup value={supplierCategoryID === null ? '' : String(supplierCategoryID)} onValueChange={(value) => setSupplierCategoryID(value === '' ? null : Number(value))}>
+                    <DropdownMenuRadioItem value="" disabled={isDeleting} closeOnClick>Todas las categorías</DropdownMenuRadioItem>
                     {categories.map((category) => (
-                      <DropdownMenuRadioItem key={category.SupplierCategoryID} value={String(category.SupplierCategoryID)} closeOnClick>
+                      <DropdownMenuRadioItem
+                        key={category.SupplierCategoryID}
+                        value={String(category.SupplierCategoryID)}
+                        disabled={isDeleting}
+                        closeOnClick
+                      >
                         {category.NombreCategoriaProveedor}
                       </DropdownMenuRadioItem>
                     ))}
@@ -138,21 +216,24 @@ export default function SuppliersPage() {
                 <DropdownMenuTrigger
                   id="supplierDeliveryMethod"
                   type="button"
+                  disabled={isDeleting}
                   className="flex h-8 w-full items-center justify-between gap-2 rounded-lg border border-input bg-transparent px-2.5 text-left text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
                 >
                   <span className="min-w-0 truncate">
-                    {deliveryMethods.find((method) => method.DeliveryMethodID === deliveryMethodID)?.NombreMetodoEntrega ?? 'Todos los métodos'}
+                    {deliveryMethodID === null ? 'Todos los métodos' : deliveryMethods.find((method) => method.DeliveryMethodID === deliveryMethodID)?.NombreMetodoEntrega ?? 'Método seleccionado'}
                   </span>
                   <ChevronDownIcon className="size-4 shrink-0" aria-hidden="true" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="max-w-[calc(100vw-2rem)]">
-                  <DropdownMenuRadioGroup
-                    value={deliveryMethodID === null ? '' : String(deliveryMethodID)}
-                    onValueChange={(value) => setDeliveryMethodID(value === '' ? null : Number(value))}
-                  >
-                    <DropdownMenuRadioItem value="" closeOnClick>Todos los métodos</DropdownMenuRadioItem>
+                  <DropdownMenuRadioGroup value={deliveryMethodID === null ? '' : String(deliveryMethodID)} onValueChange={(value) => setDeliveryMethodID(value === '' ? null : Number(value))}>
+                    <DropdownMenuRadioItem value="" disabled={isDeleting} closeOnClick>Todos los métodos</DropdownMenuRadioItem>
                     {deliveryMethods.map((method) => (
-                      <DropdownMenuRadioItem key={method.DeliveryMethodID} value={String(method.DeliveryMethodID)} closeOnClick>
+                      <DropdownMenuRadioItem
+                        key={method.DeliveryMethodID}
+                        value={String(method.DeliveryMethodID)}
+                        disabled={isDeleting}
+                        closeOnClick
+                      >
                         {method.NombreMetodoEntrega}
                       </DropdownMenuRadioItem>
                     ))}
@@ -162,11 +243,11 @@ export default function SuppliersPage() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Button type="submit">
+              <Button type="submit" disabled={isDeleting}>
                 <SearchIcon data-icon="inline-start" />
                 Buscar
               </Button>
-              <Button type="button" variant="outline" onClick={resetFilters}>
+              <Button type="button" variant="outline" disabled={isDeleting} onClick={resetFilters}>
                 <RotateCcwIcon data-icon="inline-start" />
                 Limpiar
               </Button>
@@ -182,6 +263,37 @@ export default function SuppliersPage() {
                 ? 'Actualizando...'
                 : `Página ${pageNumber} de ${totalPages}`}
             </span>
+          </div>
+
+          <div className="flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="min-w-0 break-words text-sm text-muted-foreground" aria-live="polite">
+              {selectedSupplier ? `Seleccionado: ${selectedSupplier.NombreProveedor}` : 'Seleccione un proveedor para eliminarlo.'}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {selectedSupplier && (
+                <Button type="button" variant="outline" disabled={isLoading || isDeleting} onClick={clearSelection}>
+                  Quitar selección
+                </Button>
+              )}
+              <AlertDialog open={isConfirmingDelete} onOpenChange={(open) => { if (!isDeleting) setIsConfirmingDelete(open) }}>
+                <AlertDialogTrigger render={<Button variant="destructive" />} disabled={!selectedSupplier || isLoading || isDeleting}>
+                  <Trash2Icon data-icon="inline-start" />
+                  Eliminar proveedor
+                </AlertDialogTrigger>
+                <AlertDialogContent aria-busy={isDeleting}>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Eliminar a {selectedSupplier?.NombreProveedor}?</AlertDialogTitle>
+                    <AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction type="button" variant="destructive" disabled={isDeleting || !selectedSupplier} onClick={() => void handleDeleteSupplier()}>
+                      {isDeleting ? 'Eliminando...' : 'Sí, eliminar'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
 
           <div className="min-h-[20rem] md:min-h-[26rem]" aria-busy={isLoading}>
@@ -207,8 +319,19 @@ export default function SuppliersPage() {
               <>
                 <ul className="divide-y md:hidden">
                   {suppliers.map((supplier) => (
-                    <li key={supplier.SupplierID} className="space-y-3 px-4 py-4">
-                      <p className="break-words text-sm font-medium">{supplier.NombreProveedor}</p>
+                    <li key={supplier.SupplierID} data-state={selectedSupplierID === supplier.SupplierID ? 'selected' : undefined} className="space-y-3 px-4 py-4 data-[state=selected]:bg-muted">
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          id={`supplier-mobile-${supplier.SupplierID}`}
+                          checked={selectedSupplierID === supplier.SupplierID}
+                          disabled={isLoading || isDeleting}
+                          onCheckedChange={() => toggleSupplier(supplier.SupplierID)}
+                          className="mt-0.5"
+                        />
+                        <label htmlFor={`supplier-mobile-${supplier.SupplierID}`} className="min-w-0 cursor-pointer break-words text-sm font-medium">
+                          {supplier.NombreProveedor}
+                        </label>
+                      </div>
                       <dl className="grid grid-cols-2 gap-x-4 text-sm">
                         <div className="min-w-0">
                           <dt className="text-xs text-muted-foreground">Categoría</dt>
@@ -219,35 +342,76 @@ export default function SuppliersPage() {
                           <dd className="break-words">{supplier.NombreMetodoEntrega ?? 'No asignado'}</dd>
                         </div>
                       </dl>
+                      <div className="flex justify-end">
+                        <Button
+                          nativeButton={false}
+                          render={<Link href={`/suppliers/${supplier.SupplierID}`} />}
+                          variant="outline"
+                          size="sm"
+                        >
+                          Ver detalle
+                        </Button>
+                      </div>
                     </li>
                   ))}
                 </ul>
 
                 <div className="hidden md:block">
-                  <Table className="min-w-[640px] table-fixed">
+                  <Table className="min-w-[720px] table-fixed">
                     <colgroup>
-                      <col className="w-[45%]" />
-                      <col className="w-[30%]" />
-                      <col className="w-[25%]" />
+                      <col className="w-[12%]" />
+                      <col className="w-[31%]" />
+                      <col className="w-[20%]" />
+                      <col className="w-[20%]" />
+                      <col className="w-[17%]" />
                     </colgroup>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="text-center">Seleccionar</TableHead>
                         <TableHead>Nombre</TableHead>
                         <TableHead>Categoría</TableHead>
                         <TableHead>Método de entrega</TableHead>
+                        <TableHead>Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {suppliers.map((supplier) => (
-                        <TableRow key={supplier.SupplierID}>
-                          <TableCell className="truncate" title={supplier.NombreProveedor}>
-                            {supplier.NombreProveedor}
+                        <TableRow key={supplier.SupplierID} data-state={selectedSupplierID === supplier.SupplierID ? 'selected' : undefined}>
+                          <TableCell className="p-0">
+                            <label className="flex min-h-10 cursor-pointer items-center justify-center" htmlFor={`supplier-desktop-${supplier.SupplierID}`}>
+                              <Checkbox
+                                id={`supplier-desktop-${supplier.SupplierID}`}
+                                aria-label={`Seleccionar a ${supplier.NombreProveedor}`}
+                                checked={selectedSupplierID === supplier.SupplierID}
+                                disabled={isLoading || isDeleting}
+                                onCheckedChange={() => toggleSupplier(supplier.SupplierID)}
+                              />
+                            </label>
                           </TableCell>
-                          <TableCell className="truncate" title={supplier.NombreCategoriaProveedor}>
-                            {supplier.NombreCategoriaProveedor}
+                          <TableCell className="p-0">
+                            <label htmlFor={`supplier-desktop-${supplier.SupplierID}`} className="block cursor-pointer truncate p-2" title={supplier.NombreProveedor}>
+                              {supplier.NombreProveedor}
+                            </label>
                           </TableCell>
-                          <TableCell className="truncate" title={supplier.NombreMetodoEntrega ?? 'No asignado'}>
-                            {supplier.NombreMetodoEntrega ?? 'No asignado'}
+                          <TableCell className="p-0">
+                            <label htmlFor={`supplier-desktop-${supplier.SupplierID}`} className="block cursor-pointer truncate p-2" title={supplier.NombreCategoriaProveedor}>
+                              {supplier.NombreCategoriaProveedor}
+                            </label>
+                          </TableCell>
+                          <TableCell className="p-0">
+                            <label htmlFor={`supplier-desktop-${supplier.SupplierID}`} className="block cursor-pointer truncate p-2" title={supplier.NombreMetodoEntrega ?? 'No asignado'}>
+                              {supplier.NombreMetodoEntrega ?? 'No asignado'}
+                            </label>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              nativeButton={false}
+                              render={<Link href={`/suppliers/${supplier.SupplierID}`} />}
+                              variant="outline"
+                              size="sm"
+                            >
+                              Ver detalle
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -267,8 +431,8 @@ export default function SuppliersPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={pageNumber === 1 || isLoading}
-                  onClick={() => setPageNumber((page) => page - 1)}
+                  disabled={pageNumber === 1 || isLoading || isDeleting}
+                  onClick={() => changePage(pageNumber - 1)}
                 >
                   <ChevronLeftIcon data-icon="inline-start" />
                   Anterior
@@ -276,8 +440,8 @@ export default function SuppliersPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={pageNumber >= totalPages || isLoading}
-                  onClick={() => setPageNumber((page) => page + 1)}
+                  disabled={pageNumber >= totalPages || isLoading || isDeleting}
+                  onClick={() => changePage(pageNumber + 1)}
                 >
                   Siguiente
                   <ChevronRightIcon data-icon="inline-end" />
@@ -295,7 +459,7 @@ export default function SuppliersPage() {
                   step={1}
                   required
                   defaultValue={pageNumber}
-                  disabled={isLoading || totalPages === 0}
+                  disabled={isLoading || isDeleting || totalPages === 0}
                   onKeyDown={(event) => { if (event.key === '-') event.preventDefault() }}
                   onChange={(event) => {
                     if (event.currentTarget.value !== '' && Number(event.currentTarget.value) < 1) {
@@ -304,7 +468,7 @@ export default function SuppliersPage() {
                   }}
                   className="w-16 text-center"
                 />
-                <Button type="submit" variant="outline" disabled={isLoading || totalPages === 0}>
+                <Button type="submit" variant="outline" disabled={isLoading || isDeleting || totalPages === 0}>
                   Ir
                 </Button>
               </form>

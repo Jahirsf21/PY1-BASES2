@@ -2,7 +2,8 @@
 
 import type { SubmitEvent } from 'react'
 import { useEffect, useState } from 'react'
-import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, RotateCcwIcon, SearchIcon } from 'lucide-react'
+import Link from 'next/link'
+import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, PlusIcon, RotateCcwIcon, SearchIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
@@ -89,11 +90,15 @@ export default function SalesPage() {
   const totalPages = invoicesResponse?.totalPages ?? 0
   const totalCount = invoicesResponse?.totalCount ?? 0
 
+  function changePage(page: number) {
+    setPageNumber(page)
+  }
+
   function handlePageSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     const page = Number(new FormData(event.currentTarget).get('pageNumber'))
-    if (Number.isInteger(page) && page >= 1 && page <= totalPages) {
-      setPageNumber(page)
+    if (!isLoading && Number.isInteger(page) && page >= 1 && page <= totalPages) {
+      changePage(page)
     }
   }
 
@@ -101,10 +106,13 @@ export default function SalesPage() {
     <main className="flex min-w-0 flex-1 bg-muted/30">
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 sm:gap-6 sm:px-8 sm:py-8">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <h1 className="text-2xl font-semibold tracking-tight">Ventas</h1>
-          <p className="text-sm text-muted-foreground">
-            {totalCount} {totalCount === 1 ? 'Factura' : 'Facturas'}
-          </p>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Ventas</h1>
+            <p className="text-sm text-muted-foreground">{totalCount} {totalCount === 1 ? 'Factura' : 'Facturas'}</p>
+          </div>
+          <Button nativeButton={false} render={<Link href="/sales/new" />}>
+            <PlusIcon data-icon="inline-start" /> Nueva factura
+          </Button>
         </div>
 
         <div className="rounded-lg border bg-card p-4 shadow-sm">
@@ -163,7 +171,7 @@ export default function SalesPage() {
                   className="flex h-8 w-full items-center justify-between gap-2 rounded-lg border border-input bg-transparent px-2.5 text-left text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
                 >
                   <span className="min-w-0 truncate">
-                    {deliveryMethods.find((method) => method.DeliveryMethodID === deliveryMethodID)?.NombreMetodoEntrega ?? 'Todos los métodos'}
+                    {deliveryMethodID === null ? 'Todos los métodos' : deliveryMethods.find((method) => method.DeliveryMethodID === deliveryMethodID)?.NombreMetodoEntrega ?? 'Método seleccionado'}
                   </span>
                   <ChevronDownIcon className="size-4 shrink-0" aria-hidden="true" />
                 </DropdownMenuTrigger>
@@ -259,8 +267,8 @@ export default function SalesPage() {
                 <ul className="divide-y md:hidden">
                   {invoices.map((invoice) => (
                     <li key={invoice.NumeroFactura} className="space-y-3 px-4 py-4 text-sm">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="font-medium">Factura #{invoice.NumeroFactura}</p>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="min-w-0 break-words font-medium">Factura #{invoice.NumeroFactura}</p>
                         <p className="font-medium tabular-nums">${amountFormatter.format(invoice.MontoFacturado)}</p>
                       </div>
                       <p className="break-words">{invoice.NombreCliente}</p>
@@ -274,18 +282,22 @@ export default function SalesPage() {
                           <dd className="break-words">{invoice.NombreMetodoEntrega}</dd>
                         </div>
                       </dl>
+                      <div className="flex justify-end">
+                        <Button nativeButton={false} render={<Link href={`/sales/${invoice.NumeroFactura}`} />} variant="outline" size="sm">Ver detalle</Button>
+                      </div>
                     </li>
                   ))}
                 </ul>
 
                 <div className="hidden md:block">
-                  <Table className="min-w-[720px] table-fixed">
+                  <Table className="min-w-[800px] table-fixed">
                     <colgroup>
-                      <col className="w-[14%]" />
+                      <col className="w-[13%]" />
+                      <col className="w-[15%]" />
+                      <col className="w-[23%]" />
+                      <col className="w-[19%]" />
                       <col className="w-[17%]" />
-                      <col className="w-[27%]" />
-                      <col className="w-[25%]" />
-                      <col className="w-[17%]" />
+                      <col className="w-[13%]" />
                     </colgroup>
                     <TableHeader>
                       <TableRow>
@@ -294,16 +306,18 @@ export default function SalesPage() {
                         <TableHead>Cliente</TableHead>
                         <TableHead>Método de entrega</TableHead>
                         <TableHead className="text-right">Monto facturado</TableHead>
+                        <TableHead>Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {invoices.map((invoice) => (
                         <TableRow key={invoice.NumeroFactura}>
-                          <TableCell className="font-medium">#{invoice.NumeroFactura}</TableCell>
-                          <TableCell>{dateFormatter.format(new Date(invoice.FechaFactura))}</TableCell>
+                          <TableCell className="truncate font-medium">#{invoice.NumeroFactura}</TableCell>
+                          <TableCell className="truncate">{dateFormatter.format(new Date(invoice.FechaFactura))}</TableCell>
                           <TableCell className="truncate" title={invoice.NombreCliente}>{invoice.NombreCliente}</TableCell>
                           <TableCell className="truncate" title={invoice.NombreMetodoEntrega}>{invoice.NombreMetodoEntrega}</TableCell>
-                          <TableCell className="text-right tabular-nums">${amountFormatter.format(invoice.MontoFacturado)}</TableCell>
+                          <TableCell className="truncate text-right tabular-nums">${amountFormatter.format(invoice.MontoFacturado)}</TableCell>
+                          <TableCell><Button nativeButton={false} render={<Link href={`/sales/${invoice.NumeroFactura}`} />} variant="outline" size="sm">Ver detalle</Button></TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -323,7 +337,7 @@ export default function SalesPage() {
                   type="button"
                   variant="outline"
                   disabled={pageNumber === 1 || isLoading}
-                  onClick={() => setPageNumber((page) => page - 1)}
+                  onClick={() => changePage(pageNumber - 1)}
                 >
                   <ChevronLeftIcon data-icon="inline-start" />
                   Anterior
@@ -332,7 +346,7 @@ export default function SalesPage() {
                   type="button"
                   variant="outline"
                   disabled={pageNumber >= totalPages || isLoading}
-                  onClick={() => setPageNumber((page) => page + 1)}
+                  onClick={() => changePage(pageNumber + 1)}
                 >
                   Siguiente
                   <ChevronRightIcon data-icon="inline-end" />
