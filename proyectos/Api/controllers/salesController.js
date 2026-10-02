@@ -1,6 +1,6 @@
 import { paginatedResponse } from '../helpers/paginatedResponse.js'
 import { validateInvoice } from '../helpers/entityValidation.js'
-import { getInvoices, getInvoiceHeader, getInvoiceForEdit, getInvoiceLines, insertInvoice, updateInvoice, deleteInvoice } from '../services/sales.js'
+import { getInvoices, getInvoiceHeader, getInvoiceForEdit, getInvoiceLines, insertInvoice, updateInvoice } from '../services/sales.js'
 
 /**
  * Obtiene una página de facturas.
@@ -153,26 +153,3 @@ export async function editInvoice(req, res) {
     }
 }
 
-/**
- * Elimina una factura por su identificador.
- *
- * @param {import('express').Request} req Petición HTTP con invoiceID en req.params.
- * @param {import('express').Response} res Respuesta HTTP.
- * @returns {Promise<import('express').Response>} Respuesta sin contenido al eliminarla.
- */
-export async function removeInvoice(req, res) {
-    const invoiceID = Number(req.params.invoiceID)
-    try {
-        await deleteInvoice(invoiceID)
-        return res.status(204).send()
-    } catch (error) {
-        const sqlErrorCode = Number(error.number)
-        if (sqlErrorCode === 54003) {
-            return res.status(404).json({message: 'Factura no encontrada'})
-        }
-        if (sqlErrorCode === 547) {
-            return res.status(409).json({message: 'La factura tiene registros asociados'})
-        }
-        return res.status(500).json({message: 'Error al eliminar la factura'})
-    }
-}

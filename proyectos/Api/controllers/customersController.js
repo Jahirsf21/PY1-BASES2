@@ -26,6 +26,13 @@ export async function listCustomers(req, res) {
         const result = await getCustomers(customerName, customerCategoryID, deliveryMethodID, pageNumber, pageSize)
         return paginatedResponse(res, pageNumber, pageSize, result)
     } catch (error) {
+        const sqlErrorCode = Number(error.number)
+        if (sqlErrorCode === 51003) {
+            return res.status(400).json({message: 'La categoría de cliente indicada no existe.'})
+        }
+        if (sqlErrorCode === 51004) {
+            return res.status(400).json({message: 'El método de entrega indicado no existe.'})
+        }
         return res.status(500).json({message: 'Error al obtener clientes'})
     }
 }

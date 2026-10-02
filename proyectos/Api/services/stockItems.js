@@ -3,18 +3,18 @@ import sql from "mssql"
 
 /**
  * Obtiene una página de productos junto con el total de registros.
- * Permite filtrar opcionalmente por nombre de producto y grupo.
+ * Permite filtrar opcionalmente por nombre de producto y grupos.
  *
  * @param {string|null} stockItemName Nombre del producto (búsqueda parcial) o null para no filtrar.
- * @param {number|null} stockGroupID ID del grupo de productos o null para no filtrar.
+ * @param {string|null} stockGroupIDsJson Arreglo JSON de IDs de grupos de productos; null o [] para no filtrar.
  * @param {number} pageNumber Número de página solicitado.
  * @param {number} pageSize Cantidad de productos por página.
  * @returns {Promise<{totalCount: number, data: object[]}>} Total de registros y productos de la página.
  */
-export async function getStockItems(stockItemName, stockGroupID, pageNumber, pageSize) {
+export async function getStockItems(stockItemName, stockGroupIDsJson, pageNumber, pageSize) {
     const connection = (await getPool()).request()
     connection.input('StockItemName', sql.NVarChar, stockItemName)
-    connection.input('StockGroupID', sql.Int, stockGroupID)
+    connection.input('StockGroupIDsJson', sql.NVarChar(sql.MAX), stockGroupIDsJson)
     connection.input('PageNumber', sql.Int, pageNumber)
     connection.input('PageSize', sql.Int, pageSize)
     connection.output('TotalCount', sql.Int)

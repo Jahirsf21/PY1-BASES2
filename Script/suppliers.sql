@@ -21,7 +21,11 @@ create or alter procedure Purchasing.GetSuppliers
     @TotalCount int = 0 output
 as
     begin
-        set nocount on
+        set nocount on;
+        if @SupplierCategoryID is not null and not exists (select 1 from SupplierCategories where SupplierCategoryID = @SupplierCategoryID)
+            throw 52004, 'La categoría de proveedor indicada no existe.', 1;
+        if @DeliveryMethodID is not null and not exists (select 1 from DeliveryMethods where DeliveryMethodID = @DeliveryMethodID)
+            throw 52005, 'El método de entrega indicado no existe.', 1;
         select @TotalCount = count(*) from Suppliers sp
         inner join SupplierCategories sg on sp.SupplierCategoryID = sg.SupplierCategoryID
         left join DeliveryMethods dv on sp.DeliveryMethodID = dv.DeliveryMethodID

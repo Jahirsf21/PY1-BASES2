@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { listInvoices, getInvoiceById, getInvoiceEditById, getInvoiceLinesById, addInvoice, editInvoice, removeInvoice } from '../controllers/salesController.js'
+import { listInvoices, getInvoiceById, getInvoiceEditById, getInvoiceLinesById, addInvoice, editInvoice } from '../controllers/salesController.js'
 
 // Rutas de Ventas (facturas).
 const router = Router()
@@ -45,12 +45,5 @@ router.get('/sales/:invoiceID/lines', getInvoiceLinesById)
  * Path param: invoiceID. Body: datos requeridos por Sales.UpdateInvoice.
  */
 router.put('/sales/:invoiceID', editInvoice)
-
-/**
- * DELETE /sales/:invoiceID
- * Elimina una factura por su identificador.
- * Path param: invoiceID
- */
-router.delete('/sales/:invoiceID', removeInvoice)
 
 export default router

@@ -21,7 +21,11 @@ create or alter procedure Sales.GetCustomers
     @TotalCount int = 0 output
 as
     begin
-        set nocount on
+        set nocount on;
+        if @CustomerCategoryID is not null and not exists (select 1 from CustomerCategories where CustomerCategoryID = @CustomerCategoryID)
+            throw 51003, 'La categoría de cliente indicada no existe.', 1;
+        if @DeliveryMethodID is not null and not exists (select 1 from DeliveryMethods where DeliveryMethodID = @DeliveryMethodID)
+            throw 51004, 'El método de entrega indicado no existe.', 1;
         select @TotalCount = count(*) from Customers cs
         inner join CustomerCategories cg on cs.CustomerCategoryID = cg.CustomerCategoryID
         inner join DeliveryMethods dv on cs.DeliveryMethodID = dv.DeliveryMethodID

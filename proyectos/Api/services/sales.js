@@ -133,14 +133,3 @@ export async function updateInvoice(invoiceID, invoice) {
     await connection.execute('Sales.UpdateInvoice')
 }
 
-/**
- * Elimina una factura y sus líneas de detalle.
- *
- * @param {number} invoiceID Identificador de la factura.
- * @returns {Promise<void>} Finaliza al eliminar la factura.
- */
-export async function deleteInvoice(invoiceID) {
-    const connection = (await getPool()).request()
-    connection.input('InvoiceID', sql.Int, invoiceID)
-    await connection.execute('Sales.DeleteInvoice')
-}

@@ -26,6 +26,13 @@ export async function listSuppliers(req, res) {
         const result = await getSuppliers(supplierName, supplierCategoryID, deliveryMethodID, pageNumber, pageSize)
         return paginatedResponse(res, pageNumber, pageSize, result)
     } catch (error) {
+        const sqlErrorCode = Number(error.number)
+        if (sqlErrorCode === 52004) {
+            return res.status(400).json({message: 'La categoría de proveedor indicada no existe.'})
+        }
+        if (sqlErrorCode === 52005) {
+            return res.status(400).json({message: 'El método de entrega indicado no existe.'})
+        }
         return res.status(500).json({message: 'Error al obtener proveedores'})
     }
 }

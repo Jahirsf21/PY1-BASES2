@@ -7,7 +7,8 @@ const router = Router()
 /**
  * GET /stock-items
  * Devuelve una página de productos paginada.
- * Query params: pageNumber, pageSize, stockItemName, stockGroupID
+ * Query params: pageNumber, pageSize, stockItemName, stockGroupIDsJson
+ * stockGroupIDsJson: arreglo JSON de IDs de grupos; null o [] incluye todos.
  */
 router.get('/stock-items', listStockItems)
 

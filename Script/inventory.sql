@@ -10,27 +10,62 @@ go
 /*
     Obtiene los productos (stock items) paginados, ordenados alfabéticamente por nombre.
     Si un producto pertenece a varios grupos, se concatenan sus nombres en una sola columna.
-    Permite filtrar opcionalmente por nombre de producto y por grupo.
+    Permite filtrar opcionalmente por nombre de producto y una lista JSON de grupos ([1, 3, 5]).
+    Si la lista es null o está vacía, incluye todos los grupos; ignora los IDs repetidos.
+    Combina los filtros con AND y exige que el producto pertenezca a todos los grupos seleccionados.
     Incluye el total de registros (TotalCount) para calcular la paginación en el cliente.
     Devuelve: StockItemID, NombreProducto, NombreGrupoProducto, CantidadTotalEnInventarios
 */
 create or alter procedure Warehouse.GetStockItems
     @StockItemName nvarchar(100) = null,
-    @StockGroupID int = null,
+    @StockGroupIDsJson nvarchar(max) = null,
     @PageNumber int = 1,
     @PageSize int = 10,
     @TotalCount int = 0 output
 as
     begin
-        set nocount on
+        set nocount on;
+        declare @SelectedStockGroups table (StockGroupID int primary key);
+        if @StockGroupIDsJson is not null
+            begin
+                if isjson(@StockGroupIDsJson, array) <> 1
+                    throw 50003, 'StockGroupIDsJson debe ser un arreglo JSON de IDs de categorías.', 1;
+                if exists (
+                    select 1
+                    from openjson(@StockGroupIDsJson)
+                    where [type] <> 2 or try_convert(int, [value]) is null or try_convert(int, [value]) < 1
+                )
+                    throw 50004, 'Los IDs de categorías deben ser números enteros positivos.', 1;
+                insert into @SelectedStockGroups (StockGroupID)
+                select distinct convert(int, [value])
+                from openjson(@StockGroupIDsJson);
+                if exists (
+                    select 1
+                    from @SelectedStockGroups selected
+                    where not exists (select 1 from StockGroups sg where sg.StockGroupID = selected.StockGroupID)
+                )
+                    throw 50005, 'Una o más categorías indicadas no existen en la base de datos.', 1;
+            end
         select @TotalCount = count(*) from StockItems s
         where
-            (@StockItemName is null or s.StockItemName like '%' + @StockItemName + '%')
-            and (@StockGroupID is null or exists(
+            s.StockItemName like '%' + isnull(@StockItemName, '') + '%'
+            and exists (select 1 from StockItemHoldings sih where sih.StockItemID = s.StockItemID)
+            and exists (
                 select 1
                 from StockItemStockGroups sig
-                where sig.StockItemID = s.StockItemID and sig.StockGroupID = @StockGroupID
-            ))
+                inner join StockGroups sg on sig.StockGroupID = sg.StockGroupID
+                where sig.StockItemID = s.StockItemID
+            )
+            and not exists (
+                select 1
+                from @SelectedStockGroups selected
+                where not exists (
+                    select 1
+                    from StockItemStockGroups sig
+                    where sig.StockItemID = s.StockItemID
+                        and sig.StockGroupID = selected.StockGroupID
+                )
+            )
         select
             s.StockItemID,
             s.StockItemName as NombreProducto,
@@ -41,12 +76,17 @@ as
         inner join StockItemStockGroups sig on s.StockItemID = sig.StockItemID
         inner join StockGroups sg on sig.StockGroupID = sg.StockGroupID
         where
-            (@StockItemName is null or s.StockItemName like '%' + @StockItemName + '%')
-            and (@StockGroupID is null or exists(
+            s.StockItemName like '%' + isnull(@StockItemName, '') + '%'
+            and not exists (
                 select 1
-                from StockItemStockGroups sig2
-                where sig2.StockItemID = s.StockItemID and sig2.StockGroupID = @StockGroupID
-            ))
+                from @SelectedStockGroups selected
+                where not exists (
+                    select 1
+                    from StockItemStockGroups sig2
+                    where sig2.StockItemID = s.StockItemID
+                        and sig2.StockGroupID = selected.StockGroupID
+                )
+            )
         group by s.StockItemID, s.StockItemName, sih.QuantityOnHand
         order by s.StockItemName
         offset(@PageNumber - 1) * @PageSize rows

@@ -4,9 +4,9 @@ import { getStockItems, getStockGroups, getColors, getPackageTypes, getStockItem
 
 /**
  * Obtiene una página de productos.
- * Permite filtrar opcionalmente por nombre de producto y grupo.
+ * Permite filtrar opcionalmente por nombre de producto y grupos.
  *
- * @param {import('express').Request} req Petición HTTP. Espera pageNumber, pageSize, stockItemName y stockGroupID en req.query.
+ * @param {import('express').Request} req Petición HTTP. Espera pageNumber, pageSize, stockItemName y stockGroupIDsJson en req.query. El arreglo JSON null o [] incluye todos los grupos.
  * @param {import('express').Response} res Respuesta HTTP.
  * @returns {Promise<import('express').Response>} Respuesta JSON con la página de productos.
  */
@@ -21,10 +21,20 @@ export async function listStockItems(req, res) {
             return res.status(400).json({message: 'pageSize no puede ser mayor a 100'})
         }
         const stockItemName = req.query.stockItemName
-        const stockGroupID = req.query.stockGroupID
-        const result = await getStockItems(stockItemName, stockGroupID, pageNumber, pageSize)
+        const stockGroupIDsJson = req.query.stockGroupIDsJson
+        const result = await getStockItems(stockItemName, stockGroupIDsJson, pageNumber, pageSize)
         return paginatedResponse(res, pageNumber, pageSize, result)
     } catch (error) {
+        const sqlErrorCode = Number(error.number)
+        if (sqlErrorCode === 50003) {
+            return res.status(400).json({message: 'StockGroupIDsJson debe ser un arreglo JSON de IDs de categorías.'})
+        }
+        if (sqlErrorCode === 50004) {
+            return res.status(400).json({message: 'Los IDs de categorías deben ser números enteros positivos.'})
+        }
+        if (sqlErrorCode === 50005) {
+            return res.status(400).json({message: 'Una o más categorías indicadas no existen en la base de datos.'})
+        }
         return res.status(500).json({message: 'Error al obtener productos'})
     }
 }
