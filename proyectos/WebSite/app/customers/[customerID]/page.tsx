@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation'
 import { ArrowLeftIcon, ExternalLinkIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getCustomerAddressByID, getCustomerByID, getCustomerContactsByID } from '@/app/api/customers'
+import { parseEntityId } from '@/lib/helpers/entityValidation'
 import type { CustomerAddress, CustomerContact, CustomerDetail, CustomerRouteParams } from '@/lib/types/customers'
 
 export default function CustomerDetailPage() {
@@ -21,7 +22,13 @@ export default function CustomerDetailPage() {
     async function loadCustomer() {
       setIsLoading(true)
       setError(null)
-      const id = Number(customerID)
+      const id = parseEntityId(customerID)
+      if (id === null) {
+        setError('Cliente no encontrado')
+        setIsLoading(false)
+        return
+      }
+
       try {
         const [details, customerContacts, customerAddress] = await Promise.all([
           getCustomerByID(id),

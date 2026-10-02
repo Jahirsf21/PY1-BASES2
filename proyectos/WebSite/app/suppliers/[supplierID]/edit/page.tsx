@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { getSupplierForEdit } from '@/app/api/suppliers'
 import { SupplierForm } from '@/app/suppliers/supplier-form'
+import { parseEntityId } from '@/lib/helpers/entityValidation'
 import type { SupplierEdit, SupplierRouteParams } from '@/lib/types/suppliers'
 
 export default function EditSupplierPage() {
@@ -14,8 +15,8 @@ export default function EditSupplierPage() {
 
   useEffect(() => {
     let cancelled = false
-    const id = Number(supplierID)
-    if (!/^\d+$/.test(supplierID) || !Number.isSafeInteger(id) || id < 1 || id > 2147483647) {
+    const id = parseEntityId(supplierID)
+    if (id === null) {
       Promise.resolve().then(() => { if (!cancelled) setError('Proveedor no encontrado') })
     } else {
       getSupplierForEdit(id).then((data) => { if (!cancelled) setSupplier(data) })

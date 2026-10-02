@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation'
 import { ArrowLeftIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getStockItemByID, getStockItemGroupsByID } from '@/app/api/stockItems'
+import { parseEntityId } from '@/lib/helpers/entityValidation'
 import type { StockGroup, StockItemDetail } from '@/lib/types/stockItems'
 
 const numberFormatter = new Intl.NumberFormat('es-CR', { maximumFractionDigits: 3 })
@@ -24,8 +25,8 @@ export default function StockItemDetailPage() {
 
   useEffect(() => {
     let cancelled = false
-    const id = Number(stockItemID)
-    if (!/^\d+$/.test(stockItemID) || !Number.isSafeInteger(id) || id < 1 || id > 2147483647) {
+    const id = parseEntityId(stockItemID)
+    if (id === null) {
       Promise.resolve().then(() => { if (!cancelled) setError('Producto no encontrado') })
     } else {
       Promise.all([getStockItemByID(id), getStockItemGroupsByID(id)]).then(([items, stockGroups]) => {

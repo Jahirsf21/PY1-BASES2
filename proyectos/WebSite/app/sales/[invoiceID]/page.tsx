@@ -8,6 +8,7 @@ import { ArrowLeftIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { getInvoiceByID, getInvoiceLinesByID } from '@/app/api/sales'
+import { parseEntityId } from '@/lib/helpers/entityValidation'
 import type { InvoiceDetail } from '@/lib/types/sales'
 
 const amountFormatter = new Intl.NumberFormat('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -24,8 +25,8 @@ export default function InvoiceDetailPage() {
 
   useEffect(() => {
     let cancelled = false
-    const id = Number(invoiceID)
-    if (!/^\d+$/.test(invoiceID) || !Number.isSafeInteger(id) || id < 1 || id > 2147483647) {
+    const id = parseEntityId(invoiceID)
+    if (id === null) {
       Promise.resolve().then(() => { if (!cancelled) setError('Factura no encontrada') })
     } else {
       Promise.all([getInvoiceByID(id), getInvoiceLinesByID(id)]).then(([headers, lines]) => {

@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation'
 import { ArrowLeftIcon } from 'lucide-react'
 import { getInvoiceForEdit, getInvoiceLinesByID } from '@/app/api/sales'
 import { InvoiceForm } from '@/app/sales/invoice-form'
+import { parseEntityId } from '@/lib/helpers/entityValidation'
 import type { InvoiceEdit, InvoiceLine } from '@/lib/types/sales'
 
 export default function EditInvoicePage() {
@@ -14,8 +15,8 @@ export default function EditInvoicePage() {
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
     let cancelled = false
-    const id = Number(invoiceID)
-    if (!/^\d+$/.test(invoiceID) || !Number.isSafeInteger(id) || id < 1 || id > 2147483647) {
+    const id = parseEntityId(invoiceID)
+    if (id === null) {
       Promise.resolve().then(() => { if (!cancelled) setError('Factura no encontrada') })
     } else {
       Promise.all([getInvoiceForEdit(id), getInvoiceLinesByID(id)])

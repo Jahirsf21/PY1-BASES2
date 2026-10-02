@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation'
 import { ArrowLeftIcon } from 'lucide-react'
 import { getStockItemForEdit, getStockItemGroupsByID } from '@/app/api/stockItems'
 import { StockItemForm } from '@/app/inventory/stock-item-form'
+import { parseEntityId } from '@/lib/helpers/entityValidation'
 import type { StockGroup, StockItemEdit } from '@/lib/types/stockItems'
 
 export default function EditStockItemPage() {
@@ -14,8 +15,8 @@ export default function EditStockItemPage() {
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
     let cancelled = false
-    const id = Number(stockItemID)
-    if (!/^\d+$/.test(stockItemID) || !Number.isSafeInteger(id) || id < 1 || id > 2147483647) {
+    const id = parseEntityId(stockItemID)
+    if (id === null) {
       Promise.resolve().then(() => { if (!cancelled) setError('Producto no encontrado') })
     } else {
       Promise.all([getStockItemForEdit(id), getStockItemGroupsByID(id)])

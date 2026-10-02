@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { getCustomerForEdit } from '@/app/api/customers'
 import { CustomerForm } from '@/app/customers/customer-form'
+import { parseEntityId } from '@/lib/helpers/entityValidation'
 import type { CustomerEdit, CustomerRouteParams } from '@/lib/types/customers'
 
 export default function EditCustomerPage() {
@@ -15,8 +16,8 @@ export default function EditCustomerPage() {
 
   useEffect(() => {
     let cancelled = false
-    const id = Number(customerID)
-    if (!/^\d+$/.test(customerID) || !Number.isSafeInteger(id) || id < 1 || id > 2147483647) {
+    const id = parseEntityId(customerID)
+    if (id === null) {
       Promise.resolve().then(() => {
         if (!cancelled) {
           setError('Cliente no encontrado')

@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation'
 import { ArrowLeftIcon, ExternalLinkIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getSupplierAddressByID, getSupplierByID, getSupplierContactsByID } from '@/app/api/suppliers'
+import { parseEntityId } from '@/lib/helpers/entityValidation'
 import type { SupplierAddress, SupplierContact, SupplierDetail, SupplierRouteParams } from '@/lib/types/suppliers'
 
 export default function SupplierDetailPage() {
@@ -26,8 +27,8 @@ export default function SupplierDetailPage() {
       setContacts(null)
       setAddress(null)
 
-      const id = Number(supplierID)
-      if (!/^\d+$/.test(supplierID) || !Number.isSafeInteger(id) || id < 1 || id > 2147483647) {
+      const id = parseEntityId(supplierID)
+      if (id === null) {
         setError('Proveedor no encontrado')
         setIsLoading(false)
         return

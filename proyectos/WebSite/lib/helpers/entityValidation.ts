@@ -55,6 +55,20 @@ function checkId(errors: Record<string, string>, field: string, label: string, v
 }
 
 /**
+ * Convierte y valida un identificador recibido en la URL con las reglas de los formularios.
+ *
+ * @param value Identificador de la ruta.
+ * @returns Identificador entero positivo válido para SQL Server o null si es inválido.
+ */
+export function parseEntityId(value: string): number | null {
+  if (!/^\d+$/.test(value)) return null
+  const id = Number(value)
+  const errors: Record<string, string> = {}
+  checkId(errors, 'id', 'Identificador', id, true)
+  return errors.id ? null : id
+}
+
+/**
  * Comprueba que los días para pagar sean un entero no negativo válido para SQL Server.
  *
  * @param errors Errores acumulados por nombre de campo.
