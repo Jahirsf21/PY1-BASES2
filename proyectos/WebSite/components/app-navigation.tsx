@@ -16,10 +16,6 @@ const links = [
 export function AppNavigation() {
   const pathname = usePathname()
 
-  function isActiveLink(href: string) {
-    return pathname === href || (href === '/reports' && pathname.startsWith('/reports/'))
-  }
-
   return (
     <>
       <header className="sticky top-0 z-40 border-b bg-card px-4 sm:px-8">
@@ -33,8 +29,8 @@ export function AppNavigation() {
                 <NavigationMenuItem key={href}>
                   <NavigationMenuLink
                     render={<Link href={href} />}
-                    data-active={isActiveLink(href)}
-                    aria-current={isActiveLink(href) ? 'page' : undefined}
+                    data-active={pathname === href}
+                    aria-current={pathname === href ? 'page' : undefined}
                   >
                     <Icon />
                     <span>{label}</span>
@@ -52,7 +48,7 @@ export function AppNavigation() {
             <li key={href} className="min-w-0 flex-1">
               <Link
                 href={href}
-                aria-current={isActiveLink(href) ? 'page' : undefined}
+                aria-current={pathname === href ? 'page' : undefined}
                 className="flex h-full flex-col items-center justify-center gap-1 rounded-md px-1 text-[10px] leading-tight text-muted-foreground transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring aria-[current=page]:font-semibold aria-[current=page]:text-foreground"
               >
                 <Icon className="size-5 shrink-0" aria-hidden="true" />
