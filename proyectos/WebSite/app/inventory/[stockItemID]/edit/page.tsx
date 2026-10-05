@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation'
 import { ArrowLeftIcon } from 'lucide-react'
 import { getStockItemForEdit, getStockItemGroupsByID } from '@/app/api/stockItems'
 import { StockItemForm } from '@/app/inventory/stock-item-form'
+import { toast } from '@/components/ui/toast'
 import { parseEntityId } from '@/lib/helpers/entityValidation'
 import type { StockGroup, StockItemEdit } from '@/lib/types/stockItems'
 
@@ -15,13 +16,18 @@ export default function EditStockItemPage() {
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
     let cancelled = false
+    function showError(message: string) {
+      if (cancelled) return
+      setError(message)
+      toast.add({ type: 'error', title: 'No se pudo cargar el producto para editar', description: message, priority: 'high', timeout: 8000 })
+    }
     const id = parseEntityId(stockItemID)
     if (id === null) {
-      Promise.resolve().then(() => { if (!cancelled) setError('Producto no encontrado') })
+      Promise.resolve().then(() => showError('Producto no encontrado'))
     } else {
       Promise.all([getStockItemForEdit(id), getStockItemGroupsByID(id)])
         .then(([detail, groups]) => { if (!cancelled) setItem({detail, groups}) })
-        .catch((reason) => { if (!cancelled) setError(reason instanceof Error ? reason.message : 'No fue posible cargar el producto') })
+        .catch((reason) => showError(reason instanceof Error ? reason.message : 'No fue posible cargar el producto'))
     }
     return () => { cancelled = true }
   }, [stockItemID])
@@ -32,9 +38,7 @@ export default function EditStockItemPage() {
         <Link href={`/inventory/${stockItemID}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground hover:underline">
           <ArrowLeftIcon className="size-4" aria-hidden="true" /> Volver al detalle
         </Link>
-        <p role={error ? 'alert' : undefined} className={`rounded-lg border bg-card p-4 text-sm ${error ? 'text-destructive' : 'text-muted-foreground'}`}>
-          {error ?? 'Cargando producto...'}
-        </p>
+        {!error && <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">Cargando producto...</p>}
       </div>
     </main>
   )

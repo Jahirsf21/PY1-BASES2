@@ -67,7 +67,6 @@ export function CustomerForm({ initial }: { initial?: CustomerEdit }) {
   const [statementSent, setStatementSent] = useState(Boolean(initial?.EnviarEstadoCuenta))
   const [creditHold, setCreditHold] = useState(Boolean(initial?.CreditoSuspendido))
   const [submitting, setSubmitting] = useState(false)
-  const [formError, setFormError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -81,17 +80,17 @@ export function CustomerForm({ initial }: { initial?: CustomerEdit }) {
           setLastEditedBy((selected) => employeeList.some((employee) => employee.PersonID === selected) ? selected : null)
         }
       })
-      .catch(() => { if (!cancelled) setCatalogError('No fue posible cargar las opciones del formulario. Recargue la página.') })
+      .catch(() => {
+        if (cancelled) return
+        const message = 'No fue posible cargar las opciones del formulario. Recargue la página.'
+        setCatalogError(message)
+        toast.add({ type: 'error', title: 'No se pudieron cargar las opciones del cliente', description: message, priority: 'high', timeout: 8000 })
+      })
     return () => { cancelled = true }
   }, [])
 
   function showValidationError(message: string) {
-    if (editing) {
-      setFormError(null)
-      toast.add({ type: 'error', title: 'Revise los datos del cliente', description: message, priority: 'high', timeout: 8000 })
-    } else {
-      setFormError(message)
-    }
+    toast.add({ type: 'error', title: 'Revise los datos del cliente', description: message, priority: 'high', timeout: 8000 })
   }
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
@@ -146,7 +145,6 @@ export function CustomerForm({ initial }: { initial?: CustomerEdit }) {
     }
 
     setSubmitting(true)
-    setFormError(null)
     try {
       if (initial) {
         await updateCustomerByID(initial.CustomerID, customer)
@@ -159,7 +157,6 @@ export function CustomerForm({ initial }: { initial?: CustomerEdit }) {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No fue posible guardar el cliente'
-      setFormError(editing ? null : message)
       toast.add({ type: 'error', title: editing ? 'No se pudo actualizar el cliente' : 'No se pudo crear el cliente', description: message, priority: 'high', timeout: 8000 })
       setSubmitting(false)
     }
@@ -175,8 +172,6 @@ export function CustomerForm({ initial }: { initial?: CustomerEdit }) {
           <h1 className="text-2xl font-semibold tracking-tight">{editing ? 'Editar cliente' : 'Crear cliente'}</h1>
           <p className="text-sm text-muted-foreground">Complete los datos obligatorios marcados con *.</p>
         </div>
-        {catalogError && <p role="alert" className="rounded-lg border bg-card p-4 text-sm text-destructive">{catalogError}</p>}
-        {formError && <p role="alert" className="rounded-lg border bg-card p-4 text-sm text-destructive">{formError}</p>}
         <form className="space-y-6" onSubmit={(event) => void handleSubmit(event)}>
           <fieldset disabled={submitting} className="space-y-6">
             <section className="space-y-4 rounded-lg border bg-card p-4 shadow-sm sm:p-6">

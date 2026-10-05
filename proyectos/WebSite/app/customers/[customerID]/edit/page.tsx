@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { getCustomerForEdit } from '@/app/api/customers'
 import { CustomerForm } from '@/app/customers/customer-form'
+import { toast } from '@/components/ui/toast'
 import { parseEntityId } from '@/lib/helpers/entityValidation'
 import type { CustomerEdit, CustomerRouteParams } from '@/lib/types/customers'
 
@@ -16,11 +17,16 @@ export default function EditCustomerPage() {
 
   useEffect(() => {
     let cancelled = false
+    function showError(message: string) {
+      if (cancelled) return
+      setError(message)
+      toast.add({ type: 'error', title: 'No se pudo cargar el cliente para editar', description: message, priority: 'high', timeout: 8000 })
+    }
     const id = parseEntityId(customerID)
     if (id === null) {
       Promise.resolve().then(() => {
         if (!cancelled) {
-          setError('Cliente no encontrado')
+          showError('Cliente no encontrado')
           setLoading(false)
         }
       })
@@ -28,7 +34,7 @@ export default function EditCustomerPage() {
       getCustomerForEdit(id).then((data) => {
         if (!cancelled) setCustomer(data)
       }).catch((reason) => {
-        if (!cancelled) setError(reason instanceof Error ? reason.message : 'No fue posible cargar el cliente')
+        showError(reason instanceof Error ? reason.message : 'No fue posible cargar el cliente')
       }).finally(() => {
         if (!cancelled) setLoading(false)
       })
@@ -42,9 +48,7 @@ export default function EditCustomerPage() {
     <main className="flex min-w-0 flex-1 bg-muted/30">
       <div className="mx-auto w-full max-w-5xl space-y-4 px-4 py-6 sm:px-8 sm:py-8">
         <Link href={`/customers/${customerID}`} className="text-sm text-muted-foreground hover:underline">Volver al detalle</Link>
-        <p role={error ? 'alert' : undefined} className={`rounded-lg border bg-card p-4 text-sm ${error ? 'text-destructive' : 'text-muted-foreground'}`}>
-          {error ?? (loading ? 'Cargando cliente...' : 'Cliente no encontrado')}
-        </p>
+        {loading && !error && <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">Cargando cliente...</p>}
       </div>
     </main>
   )

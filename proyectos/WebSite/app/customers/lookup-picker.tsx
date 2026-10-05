@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { toast } from '@/components/ui/toast'
 
 /** Opción seleccionable de un catálogo paginado. */
 export interface LookupOption {
@@ -41,12 +42,15 @@ export function LookupPicker({ id, label, value, onChange, search, disabled, req
     search(query, page).then((data) => {
       if (!cancelled) setResult(data)
     }).catch((reason) => {
-      if (!cancelled) setError(reason instanceof Error ? reason.message : 'No fue posible buscar')
+      if (cancelled) return
+      const message = reason instanceof Error ? reason.message : 'No fue posible buscar'
+      setError(message)
+      toast.add({ type: 'error', title: `No se pudo buscar: ${label}`, description: message, priority: 'high', timeout: 8000 })
     }).finally(() => {
       if (!cancelled) setLoading(false)
     })
     return () => { cancelled = true }
-  }, [query, page, search, refreshKey])
+  }, [query, page, search, refreshKey, label])
 
   function applySearch() {
     setLoading(true)
@@ -76,7 +80,6 @@ export function LookupPicker({ id, label, value, onChange, search, disabled, req
         <Button type="button" variant="outline" disabled={disabled} onClick={applySearch}>Buscar</Button>
       </div>
       {loading && <p className="text-sm text-muted-foreground">Buscando...</p>}
-      {!loading && error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       {!loading && !error && result && (
         <>
           <ScrollArea className="h-40 rounded-md border">
