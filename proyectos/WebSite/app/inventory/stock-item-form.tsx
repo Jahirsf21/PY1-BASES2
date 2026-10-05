@@ -69,7 +69,6 @@ export function StockItemForm({ initial, initialGroups = [] }: { initial?: Stock
   const [outerPackageID, setOuterPackageID] = useState<number | null>(initial?.OuterPackageID ?? null)
   const [stockGroupIDs, setStockGroupIDs] = useState<number[]>(initialGroups.map((group) => group.StockGroupID))
   const [isChillerStock, setIsChillerStock] = useState(Boolean(initial?.IsChillerStock))
-  const [error, setError] = useState<string | null>(null)
   const [catalogError, setCatalogError] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const back = initial ? `/inventory/${initial.StockItemID}` : '/inventory'
@@ -84,13 +83,16 @@ export function StockItemForm({ initial, initialGroups = [] }: { initial?: Stock
         setPackages(availablePackages)
         setGroups(availableGroups)
         setLastEditedBy((id) => people.some((person) => person.PersonID === id) ? id : null)
-      }).catch(() => { if (!cancelled) setCatalogError(true) })
+      }).catch(() => {
+        if (cancelled) return
+        setCatalogError(true)
+        toast.add({ type: 'error', title: 'No se pudieron cargar las opciones del producto', description: 'No fue posible cargar las opciones del formulario. Recargue la página.', priority: 'high', timeout: 8000 })
+      })
     return () => { cancelled = true }
   }, [])
 
   function showError(message: string) {
-    if (initial) { setError(null); toast.add({ type: 'error', title: 'Revise el producto', description: message, priority: 'high', timeout: 8000 }) }
-    else setError(message)
+    toast.add({ type: 'error', title: 'Revise el producto', description: message, priority: 'high', timeout: 8000 })
   }
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
@@ -118,7 +120,6 @@ export function StockItemForm({ initial, initialGroups = [] }: { initial?: Stock
     const {fields, errors} = validateStockItem(item)
     if (fields.length) { showError(errors[fields[0]]); return }
     setSubmitting(true)
-    setError(null)
     try {
       const id = initial ? (await updateStockItemByID(initial.StockItemID, item), initial.StockItemID) : await createStockItem(item)
       toast.add({ type: 'success', title: initial ? 'Producto actualizado' : 'Producto creado', description: item.stockItemName })
@@ -139,8 +140,6 @@ export function StockItemForm({ initial, initialGroups = [] }: { initial?: Stock
           <h1 className="text-2xl font-semibold tracking-tight">{initial ? 'Editar producto' : 'Crear producto'}</h1>
           <p className="text-sm text-muted-foreground">Complete los datos obligatorios marcados con *.</p>
         </div>
-        {catalogError && <p role="alert" className="rounded-lg border bg-card p-4 text-sm text-destructive">No fue posible cargar las opciones del formulario. Recargue la página.</p>}
-        {error && <p role="alert" className="rounded-lg border bg-card p-4 text-sm text-destructive">{error}</p>}
         <form className="space-y-6" onSubmit={(event) => void handleSubmit(event)}>
           <fieldset disabled={submitting} className="space-y-6">
             <section className="space-y-4 rounded-lg border bg-card p-4 shadow-sm sm:p-6">

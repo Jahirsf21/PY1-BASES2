@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { toast } from '@/components/ui/toast'
 import { getCustomerCategories } from '@/app/api/customers'
 import { getSupplierCategories } from '@/app/api/suppliers'
 import { getStockGroups } from '@/app/api/stockItems'
@@ -32,7 +33,6 @@ interface SummaryReportFiltersProps {
 export function SummaryReportFilters({ entity, name, categoryID, onNameChange, onCategoryChange }: SummaryReportFiltersProps) {
   const [categories, setCategories] = useState<CategoryOption[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const isCustomer = entity === 'customer'
 
   useEffect(() => {
@@ -40,17 +40,15 @@ export function SummaryReportFilters({ entity, name, categoryID, onNameChange, o
 
     async function loadCategories() {
       setIsLoading(true)
-      setError(null)
       try {
         const options = entity === 'customer'
           ? (await getCustomerCategories()).map((category) => ({ id: category.CustomerCategoryID, label: category.NombreCategoria }))
           : (await getSupplierCategories()).map((category) => ({ id: category.SupplierCategoryID, label: category.NombreCategoriaProveedor }))
         if (!cancelled) {
           setCategories(options)
-          setError(null)
         }
       } catch {
-        if (!cancelled) setError(`No fue posible obtener las categorías de ${entity === 'customer' ? 'clientes' : 'proveedores'}`)
+        if (!cancelled) toast.add({ type: 'error', title: 'No se pudieron cargar las categorías', description: `No fue posible obtener las categorías de ${entity === 'customer' ? 'clientes' : 'proveedores'}`, priority: 'high', timeout: 8000 })
       } finally {
         if (!cancelled) setIsLoading(false)
       }
@@ -93,7 +91,6 @@ export function SummaryReportFilters({ entity, name, categoryID, onNameChange, o
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-        {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
       </div>
     </>
   )
@@ -116,7 +113,11 @@ function useReportYears(source: ReportYearSource) {
         const result = source === 'invoices' ? await getInvoiceYears() : await getPurchaseYears()
         if (!cancelled) setYears(result.map((row) => row.Año).sort((first, second) => first - second))
       } catch (error) {
-        if (!cancelled) setError(error instanceof Error ? error.message : 'No fue posible obtener los años disponibles')
+        if (!cancelled) {
+          const message = error instanceof Error ? error.message : 'No fue posible obtener los años disponibles'
+          setError(message)
+          toast.add({ type: 'error', title: 'No se pudieron cargar los años disponibles', description: message, priority: 'high', timeout: 8000 })
+        }
       } finally {
         if (!cancelled) setIsLoading(false)
       }
@@ -153,7 +154,6 @@ function ReportYearFilter({ id, label, value, years, isLoading, onChange, minYea
           type="button"
           disabled={isLoading}
           aria-busy={isLoading}
-          aria-describedby={error ? `${id}-error` : undefined}
           className="flex h-8 w-full items-center justify-between gap-2 rounded-lg border border-input bg-transparent px-2.5 text-left text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 dark:bg-input/30"
         >
           <span className="min-w-0 truncate">{isLoading ? 'Cargando años...' : value ?? 'Todos los años'}</span>
@@ -170,12 +170,7 @@ function ReportYearFilter({ id, label, value, years, isLoading, onChange, minYea
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>
       </DropdownMenu>
-      {error && (
-        <>
-          <p id={`${id}-error`} className="text-sm text-destructive" role="alert">{error}</p>
-          {onRetry && <Button type="button" variant="outline" size="sm" className="w-fit" onClick={onRetry}>Reintentar años</Button>}
-        </>
-      )}
+      {error && onRetry && <Button type="button" variant="outline" size="sm" className="w-fit" onClick={onRetry}>Reintentar años</Button>}
       {!isLoading && !error && years.length === 0 && <p className="text-sm text-muted-foreground">No hay años disponibles.</p>}
     </div>
   )
@@ -291,7 +286,11 @@ export function MonthlyTrackingReportFilters({ source, filters, setFilters }: { 
         const result = await getStockGroups()
         if (!cancelled) setStockGroups(result)
       } catch (error) {
-        if (!cancelled) setGroupsError(error instanceof Error ? error.message : 'No fue posible obtener las categorías de productos')
+        if (!cancelled) {
+          const message = error instanceof Error ? error.message : 'No fue posible obtener las categorías de productos'
+          setGroupsError(message)
+          toast.add({ type: 'error', title: 'No se pudieron cargar las categorías de productos', description: message, priority: 'high', timeout: 8000 })
+        }
       } finally {
         if (!cancelled) setIsLoadingGroups(false)
       }
@@ -349,7 +348,6 @@ export function MonthlyTrackingReportFilters({ source, filters, setFilters }: { 
       <p id="reportStockGroupsHelp" className="text-xs text-muted-foreground sm:col-span-2">Los montos incluyen productos que pertenecen a todas las categorías seleccionadas. Sin selección, se incluyen todas las categorías.</p>
       {groupsError && (
         <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
-          <p className="text-sm text-destructive" role="alert">{groupsError}</p>
           <Button type="button" variant="outline" size="sm" disabled={isLoadingGroups} onClick={() => setGroupsRefreshKey((key) => key + 1)}>Reintentar</Button>
         </div>
       )}

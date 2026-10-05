@@ -84,7 +84,6 @@ export function InvoiceForm({initial, initialLines = []}: {initial?: InvoiceEdit
     quantity: String(line.Cantidad), unitPrice: String(line.PrecioUnitario),
   })) : [{key: nextLineKey++, product: null, quantity: '1', unitPrice: ''}])
   const [catalogError, setCatalogError] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const back = header ? `/sales/${header.InvoiceID}` : '/sales'
 
@@ -95,13 +94,16 @@ export function InvoiceForm({initial, initialLines = []}: {initial?: InvoiceEdit
       setMethods(deliveryMethods)
       setEmployees(people.sort((a, b) => a.NombreCompleto.localeCompare(b.NombreCompleto)))
       setSalespeople(sellers.sort((a, b) => a.NombreCompleto.localeCompare(b.NombreCompleto)))
-    }).catch(() => { if (!cancelled) setCatalogError(true) })
+    }).catch(() => {
+      if (cancelled) return
+      setCatalogError(true)
+      toast.add({ type: 'error', title: 'No se pudieron cargar las opciones de la factura', description: 'No fue posible cargar las opciones del formulario. Recargue la página.', priority: 'high', timeout: 8000 })
+    })
     return () => { cancelled = true }
   }, [])
 
   function showError(message: string) {
-    if (header) { setError(null); toast.add({type: 'error', title: 'Revise la factura', description: message, priority: 'high', timeout: 8000}) }
-    else setError(message)
+    toast.add({type: 'error', title: 'Revise la factura', description: message, priority: 'high', timeout: 8000})
   }
 
   function updateLine(key: number, changes: Partial<EditableLine>) {
@@ -142,7 +144,6 @@ export function InvoiceForm({initial, initialLines = []}: {initial?: InvoiceEdit
     const {fields, errors} = validateInvoice(invoice)
     if (fields.length) { showError(errors[fields[0]]); return }
     setSubmitting(true)
-    setError(null)
     try {
       const id = header ? (await updateInvoiceByID(header.InvoiceID, invoice), header.InvoiceID) : await createInvoice(invoice)
       toast.add({type: 'success', title: header ? 'Factura actualizada' : 'Factura creada', description: `Factura #${id}`})
@@ -165,8 +166,6 @@ export function InvoiceForm({initial, initialLines = []}: {initial?: InvoiceEdit
           <h1 className="text-2xl font-semibold tracking-tight">{header ? 'Editar factura' : 'Crear factura'}</h1>
           <p className="text-sm text-muted-foreground">Complete los datos obligatorios marcados con *.</p>
         </div>
-        {catalogError && <p role="alert" className="rounded-lg border bg-card p-4 text-sm text-destructive">No fue posible cargar las opciones del formulario. Recargue la página.</p>}
-        {error && <p role="alert" className="rounded-lg border bg-card p-4 text-sm text-destructive">{error}</p>}
         <form className="space-y-6" onSubmit={(event) => void handleSubmit(event)}>
           <fieldset disabled={submitting} className="space-y-6">
             <section className="space-y-4 rounded-lg border bg-card p-4 shadow-sm sm:p-6">

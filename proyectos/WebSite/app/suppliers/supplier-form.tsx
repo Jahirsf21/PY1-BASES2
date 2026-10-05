@@ -48,7 +48,6 @@ export function SupplierForm({ initial }: { initial?: SupplierEdit }) {
   const [alternateContact, setAlternateContact] = useState<LookupOption | null>(initial ? { id: initial.AlternateContactPersonID, label: initial.NombreContactoAlternativo } : null)
   const [deliveryCity, setDeliveryCity] = useState<LookupOption | null>(initial ? { id: initial.DeliveryCityID, label: initial.CiudadEntrega } : null)
   const [catalogError, setCatalogError] = useState<string | null>(null)
-  const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const back = initial ? `/suppliers/${initial.SupplierID}` : '/suppliers'
 
@@ -63,17 +62,17 @@ export function SupplierForm({ initial }: { initial?: SupplierEdit }) {
           setLastEditedBy((selected) => employeeList.some((employee) => employee.PersonID === selected) ? selected : null)
         }
       })
-      .catch(() => { if (!cancelled) setCatalogError('No fue posible cargar las opciones del formulario. Recargue la página.') })
+      .catch(() => {
+        if (cancelled) return
+        const message = 'No fue posible cargar las opciones del formulario. Recargue la página.'
+        setCatalogError(message)
+        toast.add({ type: 'error', title: 'No se pudieron cargar las opciones del proveedor', description: message, priority: 'high', timeout: 8000 })
+      })
     return () => { cancelled = true }
   }, [])
 
   function showValidationError(message: string) {
-    if (initial) {
-      setFormError(null)
-      toast.add({ type: 'error', title: 'Revise los datos del proveedor', description: message, priority: 'high', timeout: 8000 })
-    } else {
-      setFormError(message)
-    }
+    toast.add({ type: 'error', title: 'Revise los datos del proveedor', description: message, priority: 'high', timeout: 8000 })
   }
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
@@ -113,7 +112,6 @@ export function SupplierForm({ initial }: { initial?: SupplierEdit }) {
       return
     }
     setSubmitting(true)
-    setFormError(null)
     try {
       if (initial) {
         await updateSupplierByID(initial.SupplierID, supplier)
@@ -126,7 +124,6 @@ export function SupplierForm({ initial }: { initial?: SupplierEdit }) {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No fue posible guardar el proveedor'
-      setFormError(initial ? null : message)
       toast.add({ type: 'error', title: 'No se pudo guardar el proveedor', description: message, priority: 'high', timeout: 8000 })
       setSubmitting(false)
     }
@@ -137,8 +134,6 @@ export function SupplierForm({ initial }: { initial?: SupplierEdit }) {
       <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 sm:px-8 sm:py-8">
         <Link href={back} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground hover:underline"><ArrowLeftIcon className="size-4" aria-hidden="true" />{initial ? 'Volver al detalle' : 'Volver a proveedores'}</Link>
         <div><h1 className="text-2xl font-semibold tracking-tight">{initial ? 'Editar proveedor' : 'Crear proveedor'}</h1><p className="text-sm text-muted-foreground">Complete los datos obligatorios marcados con *.</p></div>
-        {catalogError && <p role="alert" className="rounded-lg border bg-card p-4 text-sm text-destructive">{catalogError}</p>}
-        {formError && <p role="alert" className="rounded-lg border bg-card p-4 text-sm text-destructive">{formError}</p>}
         <form className="space-y-6" onSubmit={(event) => void handleSubmit(event)}>
           <fieldset disabled={submitting} className="space-y-6">
             <section className="space-y-4 rounded-lg border bg-card p-4 shadow-sm sm:p-6">
