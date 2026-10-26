@@ -18,7 +18,7 @@ as
         select
             DeliveryMethodID,
             DeliveryMethodName as NombreMetodoEntrega
-        from DeliveryMethods
+        from dbo.DeliveryMethods
         order by DeliveryMethodID
     end
 go
@@ -37,14 +37,14 @@ create or alter procedure Application.GetPeople
 as
     begin
         set nocount on
-        select @TotalCount = count(*) from People
+        select @TotalCount = count(*) from dbo.People
         where 
             (@FullName is null or FullName like '%' + @FullName + '%')
             and IsEmployee = 0 and IsSalesperson = 0 and PersonID != 1
         select
             PersonID,
             FullName as NombreCompleto
-        from People
+        from dbo.People
         where 
             (@FullName is null or FullName like '%' + @FullName + '%')
             and IsEmployee = 0
@@ -67,7 +67,7 @@ as
         select 
             PersonID,
             FullName as NombreCompleto
-        from People
+        from dbo.People
         where IsEmployee = 1
         order by FullName, PersonID
     end
@@ -79,7 +79,7 @@ as
 begin
     set nocount on
     select PersonID, FullName as NombreCompleto
-    from People
+    from dbo.People
     where IsSalesperson = 1
     order by FullName, PersonID
 end
@@ -102,9 +102,9 @@ create or alter procedure Application.GetCities
 as
     begin
         set nocount on
-        select @TotalCount = count(*) from Cities ci
-        inner join StateProvinces sp on ci.StateProvinceID = sp.StateProvinceID
-        inner join Countries co on sp.CountryID = co.CountryID
+        select @TotalCount = count(*) from dbo.Cities ci
+        inner join dbo.StateProvinces sp on ci.StateProvinceID = sp.StateProvinceID
+        inner join dbo.Countries co on sp.CountryID = co.CountryID
         where
             (@CityName is null or ci.CityName like '%' + @CityName + '%')
             and (@ProvinceName is null or sp.StateProvinceName like '%' + @ProvinceName + '%')
@@ -114,9 +114,9 @@ as
             ci.CityName as NombreCiudad,
             sp.StateProvinceName as Provincia,
             co.CountryName as NombrePais
-        from Cities ci
-        inner join StateProvinces sp on ci.StateProvinceID = sp.StateProvinceID
-        inner join Countries co on sp.CountryID = co.CountryID
+        from dbo.Cities ci
+        inner join dbo.StateProvinces sp on ci.StateProvinceID = sp.StateProvinceID
+        inner join dbo.Countries co on sp.CountryID = co.CountryID
         where
             (@CityName is null or ci.CityName like '%' + @CityName + '%')
             and (@ProvinceName is null or sp.StateProvinceName like '%' + @ProvinceName + '%')

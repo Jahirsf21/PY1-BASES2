@@ -15,10 +15,10 @@ as
 			max(pol.OrderedOuters * pol.ExpectedUnitPricePerOuter) as MontoMaximo,
 			min(pol.OrderedOuters * pol.ExpectedUnitPricePerOuter) as MontoMinimo,
 			avg(pol.OrderedOuters * pol.ExpectedUnitPricePerOuter) as MontoPromedio
-		from PurchaseOrders po
-		inner join PurchaseOrderLines pol on po.PurchaseOrderID = pol.PurchaseOrderID
-		inner join Suppliers sp on po.SupplierID = sp.SupplierID
-		inner join SupplierCategories sg on sp.SupplierCategoryID = sg.SupplierCategoryID
+		from dbo.PurchaseOrders po
+		inner join dbo.PurchaseOrderLines pol on po.PurchaseOrderID = pol.PurchaseOrderID
+		inner join dbo.Suppliers sp on po.SupplierID = sp.SupplierID
+		inner join dbo.SupplierCategories sg on sp.SupplierCategoryID = sg.SupplierCategoryID
 		where
             (@SupplierName is null or sp.SupplierName like '%' + @SupplierName + '%')
             and (@SupplierCategoryID is null or sp.SupplierCategoryID = @SupplierCategoryID)
@@ -43,10 +43,10 @@ as
 	begin
 		set nocount on
 		select @TotalCount = count(*) + 1
-		from Customers cs
+		from dbo.Customers cs
 		where (@CustomerName is null or cs.CustomerName like '%' + @CustomerName + '%')
 			and (@CustomerCategoryID is null or cs.CustomerCategoryID = @CustomerCategoryID)
-			and exists (select 1 from Invoices iv where iv.CustomerID = cs.CustomerID)
+			and exists (select 1 from dbo.Invoices iv where iv.CustomerID = cs.CustomerID)
 		select
 			isnull(cs.CustomerName, 'Resumen') as NombreCliente,
 			isnull(cg.CustomerCategoryName, ' ') as NombreCategoriaCliente,
@@ -57,12 +57,12 @@ as
 			select
 				ivl.InvoiceID,
 				sum(ivl.ExtendedPrice) as MontoFacturado
-			from InvoiceLines ivl
+			from dbo.InvoiceLines ivl
 			group by ivl.InvoiceID
 		) t
-		inner join Invoices iv on t.InvoiceID = iv.InvoiceID
-		inner join Customers cs on iv.CustomerID = cs.CustomerID
-		inner join CustomerCategories cg on cs.CustomerCategoryID = cg.CustomerCategoryID
+		inner join dbo.Invoices iv on t.InvoiceID = iv.InvoiceID
+		inner join dbo.Customers cs on iv.CustomerID = cs.CustomerID
+		inner join dbo.CustomerCategories cg on cs.CustomerCategoryID = cg.CustomerCategoryID
 		where (@CustomerName is null or cs.CustomerName like '%' + @CustomerName + '%')
 			and (@CustomerCategoryID is null or cg.CustomerCategoryID = @CustomerCategoryID)
 		group by rollup ((cs.CustomerName, cg.CustomerCategoryName))
@@ -88,9 +88,9 @@ as
                 s.StockItemName as NombreProducto,
                 sum(ivl.LineProfit) as Ganancia,
                 dense_rank() over(partition by year(iv.InvoiceDate) order by sum(ivl.LineProfit) desc) as Ranking
-            from InvoiceLines ivl
-            inner join Invoices iv on ivl.InvoiceID = iv.InvoiceID
-            inner join StockItems s on ivl.StockItemID = s.StockItemID
+            from dbo.InvoiceLines ivl
+            inner join dbo.Invoices iv on ivl.InvoiceID = iv.InvoiceID
+            inner join dbo.StockItems s on ivl.StockItemID = s.StockItemID
             where year(iv.InvoiceDate) = isnull(@Year, year(iv.InvoiceDate))
             group by year(iv.InvoiceDate), s.StockItemID, s.StockItemName
         )
@@ -116,9 +116,9 @@ create or alter procedure Sales.GetTopCustomersByYear
     @InvoiceYearTo int = null
 as
     begin
-        if @InvoiceYearFrom is not null and not exists (select 1 from Invoices where year(InvoiceDate) = @InvoiceYearFrom)
+        if @InvoiceYearFrom is not null and not exists (select 1 from dbo.Invoices where year(InvoiceDate) = @InvoiceYearFrom)
             throw 50001, 'El año inicial indicado no existe en la base de datos.', 1;
-        if @InvoiceYearTo is not null and not exists (select 1 from Invoices where year(InvoiceDate) = @InvoiceYearTo)
+        if @InvoiceYearTo is not null and not exists (select 1 from dbo.Invoices where year(InvoiceDate) = @InvoiceYearTo)
             throw 50002, 'El año final indicado no existe en la base de datos.', 1;
         if @InvoiceYearFrom is not null and @InvoiceYearTo is not null and @InvoiceYearFrom > @InvoiceYearTo
             throw 50003, 'El año inicial no puede ser mayor que el año final.', 1;
@@ -130,9 +130,9 @@ as
                 count(distinct iv.InvoiceID) as CantidadFacturas,
                 sum(ivl.ExtendedPrice) as MontoFacturado,
                 dense_rank() over (partition by year(iv.InvoiceDate) order by count(distinct iv.InvoiceID) desc) as Ranking
-            from Invoices iv
-            inner join Customers cs on iv.CustomerID = cs.CustomerID
-            inner join InvoiceLines ivl on iv.InvoiceID = ivl.InvoiceID
+            from dbo.Invoices iv
+            inner join dbo.Customers cs on iv.CustomerID = cs.CustomerID
+            inner join dbo.InvoiceLines ivl on iv.InvoiceID = ivl.InvoiceID
             where 
                 (@InvoiceYearFrom is null or year(iv.InvoiceDate) >= @InvoiceYearFrom)
                 and (@InvoiceYearTo is null or year(iv.InvoiceDate) <= @InvoiceYearTo)
@@ -161,9 +161,9 @@ create or alter procedure Purchasing.GetTopSuppliersByYear
     @OrderYearTo int = null
 as
     begin
-        if @OrderYearFrom is not null and not exists (select 1 from PurchaseOrders where year(OrderDate) = @OrderYearFrom)
+        if @OrderYearFrom is not null and not exists (select 1 from dbo.PurchaseOrders where year(OrderDate) = @OrderYearFrom)
             throw 50001, 'El año inicial indicado no existe en la base de datos.', 1;
-        if @OrderYearTo is not null and not exists (select 1 from PurchaseOrders where year(OrderDate) = @OrderYearTo)
+        if @OrderYearTo is not null and not exists (select 1 from dbo.PurchaseOrders where year(OrderDate) = @OrderYearTo)
             throw 50002, 'El año final indicado no existe en la base de datos.', 1;
         if @OrderYearFrom is not null and @OrderYearTo is not null and @OrderYearFrom > @OrderYearTo
             throw 50003, 'El año inicial no puede ser mayor que el año final.', 1;
@@ -175,9 +175,9 @@ as
                 count(distinct po.PurchaseOrderID) as CantidadCompras,
                 sum(pol.OrderedOuters * pol.ExpectedUnitPricePerOuter) as MontoComprado,
                 dense_rank() over (partition by year(po.OrderDate) order by count(distinct po.PurchaseOrderID) desc) as Ranking
-            from PurchaseOrders po
-            inner join PurchaseOrderLines pol on po.PurchaseOrderID = pol.PurchaseOrderID
-            inner join Suppliers sp on po.SupplierID = sp.SupplierID
+            from dbo.PurchaseOrders po
+            inner join dbo.PurchaseOrderLines pol on po.PurchaseOrderID = pol.PurchaseOrderID
+            inner join dbo.Suppliers sp on po.SupplierID = sp.SupplierID
             where
                 (@OrderYearFrom is null or year(po.OrderDate) >= @OrderYearFrom)
                 and (@OrderYearTo is null or year(po.OrderDate) <= @OrderYearTo)
@@ -211,11 +211,11 @@ as
             select year(iv.InvoiceDate) as Año,
                     sg.StockGroupName,
                     ivl.ExtendedPrice
-            from Invoices iv
-            inner join InvoiceLines ivl on ivl.InvoiceID = iv.InvoiceID
-            inner join StockItems s on s.StockItemID = ivl.StockItemID
-            inner join StockItemStockGroups sig on sig.StockItemID = s.StockItemID
-            inner join StockGroups sg on sg.StockGroupID = sig.StockGroupID
+            from dbo.Invoices iv
+            inner join dbo.InvoiceLines ivl on ivl.InvoiceID = iv.InvoiceID
+            inner join dbo.StockItems s on s.StockItemID = ivl.StockItemID
+            inner join dbo.StockItemStockGroups sig on sig.StockItemID = s.StockItemID
+            inner join dbo.StockGroups sg on sg.StockGroupID = sig.StockGroupID
         ) as src
         pivot (
             sum(ExtendedPrice) for StockGroupName in (
@@ -248,7 +248,7 @@ create or alter procedure Sales.GetCustomerSalesTracking
 as
 	begin
 		set nocount on;
-        if @Year is not null and not exists (select 1 from Invoices where year(InvoiceDate) = @Year)
+        if @Year is not null and not exists (select 1 from dbo.Invoices where year(InvoiceDate) = @Year)
             throw 50001, 'El año indicado no existe en la base de datos.', 1;
 		if @Month is not null and @Month not between 1 and 12
 			throw 50002, 'El mes debe estar entre 1 y 12.', 1;
@@ -269,7 +269,7 @@ as
 		        if exists (
 		            select 1
 		            from @SelectedStockGroups selected
-		            where not exists (select 1 from StockGroups sg where sg.StockGroupID = selected.StockGroupID)
+		            where not exists (select 1 from dbo.StockGroups sg where sg.StockGroupID = selected.StockGroupID)
 		        )
 		            throw 50005, 'Una o más categorías indicadas no existen en la base de datos.', 1;
 		    end
@@ -279,23 +279,23 @@ as
 				iv.CustomerID,
 				year(iv.InvoiceDate) as Año,
 				month(iv.InvoiceDate) as Mes
-			from Invoices iv
-			inner join Customers cs on iv.CustomerID = cs.CustomerID
+			from dbo.Invoices iv
+			inner join dbo.Customers cs on iv.CustomerID = cs.CustomerID
 			where 
 				year(iv.InvoiceDate) = isnull(@Year, year(iv.InvoiceDate))
 				and month(iv.InvoiceDate) = isnull(@Month, month(iv.InvoiceDate))
 				and exists (
 					select 1
-					from InvoiceLines ivl
-					inner join StockItemStockGroups sig on ivl.StockItemID = sig.StockItemID
-					inner join StockGroups sg on sig.StockGroupID = sg.StockGroupID
+					from dbo.InvoiceLines ivl
+					inner join dbo.StockItemStockGroups sig on ivl.StockItemID = sig.StockItemID
+					inner join dbo.StockGroups sg on sig.StockGroupID = sg.StockGroupID
 					where ivl.InvoiceID = iv.InvoiceID
 						and not exists (
 							select 1
 							from @SelectedStockGroups selected
 							where not exists (
 								select 1
-								from StockItemStockGroups membership
+								from dbo.StockItemStockGroups membership
 								where membership.StockItemID = ivl.StockItemID
 									and membership.StockGroupID = selected.StockGroupID
 							)
@@ -313,8 +313,8 @@ as
 				sum(ivl.ExtendedPrice) as MontoFacturado,
 				first_value(sum(ivl.ExtendedPrice)) over (partition by iv.CustomerID, year(iv.InvoiceDate), month(iv.InvoiceDate) order by iv.InvoiceDate, iv.InvoiceID) as PrimeraFactura,
 				last_value(sum(ivl.ExtendedPrice)) over (partition by iv.CustomerID, year(iv.InvoiceDate), month(iv.InvoiceDate) order by iv.InvoiceDate, iv.InvoiceID rows between unbounded preceding and unbounded following) as UltimaFactura
-			from Invoices iv
-			inner join InvoiceLines ivl on iv.InvoiceID = ivl.InvoiceID
+			from dbo.Invoices iv
+			inner join dbo.InvoiceLines ivl on iv.InvoiceID = ivl.InvoiceID
 			where 
 				year(iv.InvoiceDate) = isnull(@Year, year(iv.InvoiceDate))
 				and month(iv.InvoiceDate) = isnull(@Month, month(iv.InvoiceDate))
@@ -323,7 +323,7 @@ as
 					from @SelectedStockGroups selected
 					where not exists (
 						select 1
-						from StockItemStockGroups membership
+						from dbo.StockItemStockGroups membership
 						where membership.StockItemID = ivl.StockItemID
 							and membership.StockGroupID = selected.StockGroupID
 					)
@@ -342,10 +342,10 @@ as
 					year(iv.InvoiceDate) as Año,
 					month(iv.InvoiceDate) as Mes,
 					sg.StockGroupName
-				from Invoices iv
-				inner join InvoiceLines ivl on iv.InvoiceID = ivl.InvoiceID
-				inner join StockItemStockGroups sig on ivl.StockItemID = sig.StockItemID
-				inner join StockGroups sg on sig.StockGroupID = sg.StockGroupID
+				from dbo.Invoices iv
+				inner join dbo.InvoiceLines ivl on iv.InvoiceID = ivl.InvoiceID
+				inner join dbo.StockItemStockGroups sig on ivl.StockItemID = sig.StockItemID
+				inner join dbo.StockGroups sg on sig.StockGroupID = sg.StockGroupID
 				where 
 					year(iv.InvoiceDate) = isnull(@Year, year(iv.InvoiceDate))
 					and month(iv.InvoiceDate) = isnull(@Month, month(iv.InvoiceDate))
@@ -354,7 +354,7 @@ as
 						from @SelectedStockGroups selected
 						where not exists (
 							select 1
-							from StockItemStockGroups membership
+							from dbo.StockItemStockGroups membership
 							where membership.StockItemID = ivl.StockItemID
 								and membership.StockGroupID = selected.StockGroupID
 						)
@@ -378,7 +378,7 @@ as
 			min(apv.MontoFacturado) as MontoMinimo,
 		    max(sgbp.Categorias) as Categorias
 		from AmountPerInvoice apv
-		inner join Customers cs on apv.CustomerID = cs.CustomerID
+		inner join dbo.Customers cs on apv.CustomerID = cs.CustomerID
 		inner join StockGroupsByPeriod sgbp on apv.CustomerID = sgbp.CustomerID and apv.Año = sgbp.Año and apv.Mes = sgbp.Mes
 		group by cs.CustomerID, cs.CustomerName, apv.Año, apv.Mes
 		order by cs.CustomerName, apv.Año, apv.Mes, cs.CustomerID
@@ -408,7 +408,7 @@ create or alter procedure Purchasing.GetSupplierPurchaseTracking
 as
 	begin
 		set nocount on;
-        if @Year is not null and not exists (select 1 from PurchaseOrders where year(OrderDate) = @Year)
+        if @Year is not null and not exists (select 1 from dbo.PurchaseOrders where year(OrderDate) = @Year)
             throw 50001, 'El año indicado no existe en la base de datos.', 1;
 		if @Month is not null and @Month not between 1 and 12
 			throw 50002, 'El mes debe estar entre 1 y 12.', 1;
@@ -429,7 +429,7 @@ as
 		        if exists (
 		            select 1
 		            from @SelectedStockGroups selected
-		            where not exists (select 1 from StockGroups sg where sg.StockGroupID = selected.StockGroupID)
+		            where not exists (select 1 from dbo.StockGroups sg where sg.StockGroupID = selected.StockGroupID)
 		        )
 		            throw 50005, 'Una o más categorías indicadas no existen en la base de datos.', 1;
 		    end
@@ -439,23 +439,23 @@ as
 				po.SupplierID,
 				year(po.OrderDate) as Año,
 				month(po.OrderDate) as Mes
-			from PurchaseOrders po
-			inner join Suppliers sp on po.SupplierID = sp.SupplierID
+			from dbo.PurchaseOrders po
+			inner join dbo.Suppliers sp on po.SupplierID = sp.SupplierID
 			where 
 				year(po.OrderDate) = isnull(@Year, year(po.OrderDate))
 				and month(po.OrderDate) = isnull(@Month, month(po.OrderDate))
 				and exists (
 					select 1
-					from PurchaseOrderLines pol
-					inner join StockItemStockGroups sig on pol.StockItemID = sig.StockItemID
-					inner join StockGroups sg on sig.StockGroupID = sg.StockGroupID
+					from dbo.PurchaseOrderLines pol
+					inner join dbo.StockItemStockGroups sig on pol.StockItemID = sig.StockItemID
+					inner join dbo.StockGroups sg on sig.StockGroupID = sg.StockGroupID
 					where pol.PurchaseOrderID = po.PurchaseOrderID
 						and not exists (
 							select 1
 							from @SelectedStockGroups selected
 							where not exists (
 								select 1
-								from StockItemStockGroups membership
+								from dbo.StockItemStockGroups membership
 								where membership.StockItemID = pol.StockItemID
 									and membership.StockGroupID = selected.StockGroupID
 							)
@@ -473,8 +473,8 @@ as
 				sum(pol.OrderedOuters * pol.ExpectedUnitPricePerOuter) as MontoComprado,
 				first_value(sum(pol.OrderedOuters * pol.ExpectedUnitPricePerOuter)) over (partition by po.SupplierID, year(po.OrderDate), month(po.OrderDate) order by po.OrderDate, po.PurchaseOrderID) as PrimeraCompra,
 				last_value(sum(pol.OrderedOuters * pol.ExpectedUnitPricePerOuter)) over (partition by po.SupplierID, year(po.OrderDate), month(po.OrderDate) order by po.OrderDate, po.PurchaseOrderID rows between unbounded preceding and unbounded following) as UltimaCompra
-			from PurchaseOrders po
-			inner join PurchaseOrderLines pol on po.PurchaseOrderID = pol.PurchaseOrderID
+			from dbo.PurchaseOrders po
+			inner join dbo.PurchaseOrderLines pol on po.PurchaseOrderID = pol.PurchaseOrderID
 			where 
 				year(po.OrderDate) = isnull(@Year, year(po.OrderDate))
 				and month(po.OrderDate) = isnull(@Month, month(po.OrderDate))
@@ -483,7 +483,7 @@ as
 					from @SelectedStockGroups selected
 					where not exists (
 						select 1
-						from StockItemStockGroups membership
+						from dbo.StockItemStockGroups membership
 						where membership.StockItemID = pol.StockItemID
 							and membership.StockGroupID = selected.StockGroupID
 					)
@@ -502,10 +502,10 @@ as
 					year(po.OrderDate) as Año,
 					month(po.OrderDate) as Mes,
 					sg.StockGroupName
-				from PurchaseOrders po
-				inner join PurchaseOrderLines pol on po.PurchaseOrderID = pol.PurchaseOrderID
-				inner join StockItemStockGroups sig on pol.StockItemID = sig.StockItemID
-				inner join StockGroups sg on sig.StockGroupID = sg.StockGroupID
+				from dbo.PurchaseOrders po
+				inner join dbo.PurchaseOrderLines pol on po.PurchaseOrderID = pol.PurchaseOrderID
+				inner join dbo.StockItemStockGroups sig on pol.StockItemID = sig.StockItemID
+				inner join dbo.StockGroups sg on sig.StockGroupID = sg.StockGroupID
 				where 
 					year(po.OrderDate) = isnull(@Year, year(po.OrderDate))
 					and month(po.OrderDate) = isnull(@Month, month(po.OrderDate))
@@ -514,7 +514,7 @@ as
 						from @SelectedStockGroups selected
 						where not exists (
 							select 1
-							from StockItemStockGroups membership
+							from dbo.StockItemStockGroups membership
 							where membership.StockItemID = pol.StockItemID
 								and membership.StockGroupID = selected.StockGroupID
 						)
@@ -538,7 +538,7 @@ as
 			min(app.MontoComprado) as MontoMinimo,
 		    max(sgbp.Categorias) as Categorias
 		from AmountPerPurchase app
-		inner join Suppliers sp on app.SupplierID = sp.SupplierID
+		inner join dbo.Suppliers sp on app.SupplierID = sp.SupplierID
 		inner join StockGroupsByPeriod sgbp on app.SupplierID = sgbp.SupplierID and app.Año = sgbp.Año and app.Mes = sgbp.Mes
 		group by sp.SupplierID, sp.SupplierName, app.Año, app.Mes
 		order by sp.SupplierName, app.Año, app.Mes, sp.SupplierID

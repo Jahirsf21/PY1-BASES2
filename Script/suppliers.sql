@@ -22,13 +22,13 @@ create or alter procedure Purchasing.GetSuppliers
 as
     begin
         set nocount on;
-        if @SupplierCategoryID is not null and not exists (select 1 from SupplierCategories where SupplierCategoryID = @SupplierCategoryID)
+        if @SupplierCategoryID is not null and not exists (select 1 from dbo.SupplierCategories where SupplierCategoryID = @SupplierCategoryID)
             throw 52004, 'La categoría de proveedor indicada no existe.', 1;
-        if @DeliveryMethodID is not null and not exists (select 1 from DeliveryMethods where DeliveryMethodID = @DeliveryMethodID)
+        if @DeliveryMethodID is not null and not exists (select 1 from dbo.DeliveryMethods where DeliveryMethodID = @DeliveryMethodID)
             throw 52005, 'El método de entrega indicado no existe.', 1;
-        select @TotalCount = count(*) from Suppliers sp
-        inner join SupplierCategories sg on sp.SupplierCategoryID = sg.SupplierCategoryID
-        left join DeliveryMethods dv on sp.DeliveryMethodID = dv.DeliveryMethodID
+        select @TotalCount = count(*) from dbo.Suppliers sp
+        inner join dbo.SupplierCategories sg on sp.SupplierCategoryID = sg.SupplierCategoryID
+        left join dbo.DeliveryMethods dv on sp.DeliveryMethodID = dv.DeliveryMethodID
         where
             (@SupplierName is null or sp.SupplierName like '%' + @SupplierName + '%')
             and (@SupplierCategoryID is null or sp.SupplierCategoryID = @SupplierCategoryID)
@@ -38,9 +38,9 @@ as
             sp.SupplierName as NombreProveedor,
             sg.SupplierCategoryName as NombreCategoriaProveedor,
             dv.DeliveryMethodName as NombreMetodoEntrega
-        from Suppliers sp
-        inner join SupplierCategories sg on sp.SupplierCategoryID = sg.SupplierCategoryID
-        left join DeliveryMethods dv on sp.DeliveryMethodID = dv.DeliveryMethodID
+        from dbo.Suppliers sp
+        inner join dbo.SupplierCategories sg on sp.SupplierCategoryID = sg.SupplierCategoryID
+        left join dbo.DeliveryMethods dv on sp.DeliveryMethodID = dv.DeliveryMethodID
         where
             (@SupplierName is null or sp.SupplierName like '%' + @SupplierName + '%')
             and (@SupplierCategoryID is null or sp.SupplierCategoryID = @SupplierCategoryID)
@@ -62,7 +62,7 @@ as
         select
             SupplierCategoryID,
             SupplierCategoryName as NombreCategoriaProveedor
-        from SupplierCategories
+        from dbo.SupplierCategories
         order by SupplierCategoryID
     end
 go
@@ -91,9 +91,9 @@ as
             sp.BankAccountBranch as SucursalBanco,
             sp.BankAccountNumber as NumeroCuentaBancaria,
             sp.BankInternationalCode as CodigoSwift
-        from Suppliers sp
-        inner join SupplierCategories sg on sp.SupplierCategoryID = sg.SupplierCategoryID
-        left join DeliveryMethods dv on sp.DeliveryMethodID = dv.DeliveryMethodID
+        from dbo.Suppliers sp
+        inner join dbo.SupplierCategories sg on sp.SupplierCategoryID = sg.SupplierCategoryID
+        left join dbo.DeliveryMethods dv on sp.DeliveryMethodID = dv.DeliveryMethodID
         where sp.SupplierID = @SupplierID
     end
 go
@@ -138,12 +138,12 @@ as
             sp.InternalComments as ComentariosInternos,
             sp.DeliveryLocation.Lat as Latitud,
             sp.DeliveryLocation.Long as Longitud
-        from Suppliers sp
-        inner join People pp on pp.PersonID = sp.PrimaryContactPersonID
-        inner join People pa on pa.PersonID = sp.AlternateContactPersonID
-        inner join Cities ci on ci.CityID = sp.DeliveryCityID
-        inner join StateProvinces spv on spv.StateProvinceID = ci.StateProvinceID
-        inner join Countries co on co.CountryID = spv.CountryID
+        from dbo.Suppliers sp
+        inner join dbo.People pp on pp.PersonID = sp.PrimaryContactPersonID
+        inner join dbo.People pa on pa.PersonID = sp.AlternateContactPersonID
+        inner join dbo.Cities ci on ci.CityID = sp.DeliveryCityID
+        inner join dbo.StateProvinces spv on spv.StateProvinceID = ci.StateProvinceID
+        inner join dbo.Countries co on co.CountryID = spv.CountryID
         where sp.SupplierID = @SupplierID
     end
 go
@@ -166,9 +166,9 @@ as
             pa.PhoneNumber as TelefonoAlternativo,
             pa.FaxNumber as FaxAlternativo,
             pa.EmailAddress as CorreoAlternativo
-        from Suppliers sp
-        inner join People pp on sp.PrimaryContactPersonID = pp.PersonID
-        inner join People pa on sp.AlternateContactPersonID = pa.PersonID
+        from dbo.Suppliers sp
+        inner join dbo.People pp on sp.PrimaryContactPersonID = pp.PersonID
+        inner join dbo.People pa on sp.AlternateContactPersonID = pa.PersonID
         where sp.SupplierID = @SupplierID
     end
 go
@@ -198,13 +198,13 @@ as
             sp.PostalPostalCode as CodigoPostalPostal,
             sp.DeliveryLocation.Lat as Latitud,
             sp.DeliveryLocation.Long as Longitud
-        from Suppliers sp
-        inner join Cities ci on sp.DeliveryCityID = ci.CityID
-        inner join StateProvinces spv on ci.StateProvinceID = spv.StateProvinceID
-        inner join Countries co on spv.CountryID = co.CountryID
-        inner join Cities ci2 on sp.PostalCityID = ci2.CityID
-        inner join StateProvinces spv2 on ci2.StateProvinceID = spv2.StateProvinceID
-        inner join Countries co2 on spv2.CountryID = co2.CountryID
+        from dbo.Suppliers sp
+        inner join dbo.Cities ci on sp.DeliveryCityID = ci.CityID
+        inner join dbo.StateProvinces spv on ci.StateProvinceID = spv.StateProvinceID
+        inner join dbo.Countries co on spv.CountryID = co.CountryID
+        inner join dbo.Cities ci2 on sp.PostalCityID = ci2.CityID
+        inner join dbo.StateProvinces spv2 on ci2.StateProvinceID = spv2.StateProvinceID
+        inner join dbo.Countries co2 on spv2.CountryID = co2.CountryID
         where sp.SupplierID = @SupplierID
     end
 go
@@ -218,7 +218,7 @@ as
 	begin
 		set nocount on
 		select distinct year(OrderDate) as Año
-		from PurchaseOrders
+		from dbo.PurchaseOrders
 		order by Año
 	end
 go
@@ -262,7 +262,7 @@ as
         set nocount on
         begin try
             if not exists (
-                select 1 from People
+                select 1 from dbo.People
                 where PersonID = @LastEditedBy and IsEmployee = 1
             )
                 throw 52003, 'El LastEditedBy indicado no corresponde a un empleado válido.', 1
@@ -270,7 +270,7 @@ as
             begin transaction
                 declare @InsertedIDs table (SupplierID int)
 
-                insert into Suppliers (
+                insert into dbo.Suppliers (
                     SupplierName, SupplierCategoryID, SupplierReference,
                     PrimaryContactPersonID, AlternateContactPersonID, DeliveryMethodID,
                     PaymentDays, PhoneNumber, FaxNumber, WebsiteURL,
@@ -346,13 +346,13 @@ as
         set nocount on
         begin try
             if not exists (
-                select 1 from People
+                select 1 from dbo.People
                 where PersonID = @LastEditedBy and IsEmployee = 1
             )
                 throw 52003, 'El LastEditedBy indicado no corresponde a un empleado válido.', 1
 
             begin transaction
-                update Suppliers
+                update dbo.Suppliers
                 set
                     SupplierName = @SupplierName,
                     LastEditedBy = @LastEditedBy,
@@ -410,7 +410,7 @@ as
         set nocount on
         begin try
             begin transaction
-                delete from Suppliers
+                delete from dbo.Suppliers
                 where SupplierID = @SupplierID
 
                 if @@rowcount = 0

@@ -29,10 +29,10 @@ as
         select @TotalCount = count(*)
         from (
             select iv.InvoiceID
-            from Invoices iv
-            inner join Customers cs on iv.CustomerID = cs.CustomerID
-            inner join DeliveryMethods dv on iv.DeliveryMethodID = dv.DeliveryMethodID
-            inner join InvoiceLines ivl on iv.InvoiceID = ivl.InvoiceID
+            from dbo.Invoices iv
+            inner join dbo.Customers cs on iv.CustomerID = cs.CustomerID
+            inner join dbo.DeliveryMethods dv on iv.DeliveryMethodID = dv.DeliveryMethodID
+            inner join dbo.InvoiceLines ivl on iv.InvoiceID = ivl.InvoiceID
             where 
                 (@InvoiceID is null or iv.InvoiceID = @InvoiceID)
                 and (@InvoiceDateFrom  is null or iv.InvoiceDate >= @InvoiceDateFrom)
@@ -50,10 +50,10 @@ as
             cs.CustomerName as NombreCliente,
             dv.DeliveryMethodName as NombreMetodoEntrega,
             sum(ivl.ExtendedPrice) as MontoFacturado
-        from Invoices iv
-        inner join Customers cs on iv.CustomerID = cs.CustomerID
-        inner join DeliveryMethods dv on iv.DeliveryMethodID = dv.DeliveryMethodID
-        inner join InvoiceLines ivl on iv.InvoiceID = ivl.InvoiceID
+        from dbo.Invoices iv
+        inner join dbo.Customers cs on iv.CustomerID = cs.CustomerID
+        inner join dbo.DeliveryMethods dv on iv.DeliveryMethodID = dv.DeliveryMethodID
+        inner join dbo.InvoiceLines ivl on iv.InvoiceID = ivl.InvoiceID
         where 
             (@InvoiceID is null or iv.InvoiceID = @InvoiceID)
             and (@InvoiceDateFrom  is null or iv.InvoiceDate >= @InvoiceDateFrom)
@@ -88,11 +88,11 @@ as
             sp.FullName as NombreVendedor,
             iv.InvoiceDate as FechaFactura,
             iv.DeliveryInstructions as InstruccionesEntrega
-        from Invoices iv
-        inner join Customers cs on iv.CustomerID = cs.CustomerID
-        inner join DeliveryMethods dv on iv.DeliveryMethodID = dv.DeliveryMethodID
-        inner join People cp on iv.ContactPersonID = cp.PersonID
-        inner join People sp on iv.SalespersonPersonID = sp.PersonID
+        from dbo.Invoices iv
+        inner join dbo.Customers cs on iv.CustomerID = cs.CustomerID
+        inner join dbo.DeliveryMethods dv on iv.DeliveryMethodID = dv.DeliveryMethodID
+        inner join dbo.People cp on iv.ContactPersonID = cp.PersonID
+        inner join dbo.People sp on iv.SalespersonPersonID = sp.PersonID
         where iv.InvoiceID = @InvoiceID
     end
 go
@@ -113,14 +113,14 @@ begin
            iv.LastEditedBy, ed.FullName as LastEditorName,
            iv.SalespersonPersonID, sp.FullName as SalespersonName,
            iv.CustomerPurchaseOrderNumber, iv.InvoiceDate, iv.DeliveryInstructions
-    from Invoices iv
-    join Customers cs on cs.CustomerID = iv.CustomerID
-    join Customers bill on bill.CustomerID = iv.BillToCustomerID
-    inner join People cp on cp.PersonID = iv.ContactPersonID
-    inner join People ap on ap.PersonID = iv.AccountsPersonID
-    inner join People pp on pp.PersonID = iv.PackedByPersonID
-    inner join People ed on ed.PersonID = iv.LastEditedBy
-    inner join People sp on sp.PersonID = iv.SalespersonPersonID
+    from dbo.Invoices iv
+    join dbo.Customers cs on cs.CustomerID = iv.CustomerID
+    join dbo.Customers bill on bill.CustomerID = iv.BillToCustomerID
+    inner join dbo.People cp on cp.PersonID = iv.ContactPersonID
+    inner join dbo.People ap on ap.PersonID = iv.AccountsPersonID
+    inner join dbo.People pp on pp.PersonID = iv.PackedByPersonID
+    inner join dbo.People ed on ed.PersonID = iv.LastEditedBy
+    inner join dbo.People sp on sp.PersonID = iv.SalespersonPersonID
     where iv.InvoiceID = @InvoiceID
 end
 go
@@ -142,8 +142,8 @@ as
             ivl.TaxRate as ImpuestoAplicado,
             ivl.TaxAmount as MontoImpuesto,
             ivl.ExtendedPrice as TotalLinea
-        from InvoiceLines ivl
-        inner join StockItems si on ivl.StockItemID = si.StockItemID
+        from dbo.InvoiceLines ivl
+        inner join dbo.StockItems si on ivl.StockItemID = si.StockItemID
         where ivl.InvoiceID = @InvoiceID
         order by ivl.InvoiceLineID
     end
@@ -158,7 +158,7 @@ as
 	begin
 		set nocount on
 		select distinct year(InvoiceDate) as Año
-		from Invoices
+		from dbo.Invoices
 		order by Año
 	end
 go
@@ -193,8 +193,8 @@ as
                 select @TotalDryItems = coalesce(sum(case when si.IsChillerStock = 0 then j.Quantity else 0 end), 0),
                        @TotalChillerItems = coalesce(sum(case when si.IsChillerStock = 1 then j.Quantity else 0 end), 0)
                 from openjson(@LinesJson) with (StockItemID int '$.StockItemID', Quantity int '$.Quantity') j
-                join StockItems si on si.StockItemID = j.StockItemID;
-                insert into Invoices (
+                join dbo.StockItems si on si.StockItemID = j.StockItemID;
+                insert into dbo.Invoices (
                     CustomerID, BillToCustomerID, DeliveryMethodID,
                     ContactPersonID, AccountsPersonID, SalespersonPersonID, PackedByPersonID,
                     CustomerPurchaseOrderNumber, InvoiceDate, DeliveryInstructions,
@@ -208,7 +208,7 @@ as
                     0, @TotalDryItems, @TotalChillerItems, @LastEditedBy
                 )
                 select @NewInvoiceID = InvoiceID from @InsertedIDs
-                insert into InvoiceLines (
+                insert into dbo.InvoiceLines (
                     InvoiceID, StockItemID, Description, PackageTypeID,
                     Quantity, UnitPrice, TaxRate, TaxAmount, LineProfit, ExtendedPrice, LastEditedBy
                 )
@@ -230,10 +230,10 @@ as
                     Quantity int '$.Quantity',
                     UnitPrice decimal(18, 2) '$.UnitPrice'
                 ) j
-                inner join StockItems si on j.StockItemID = si.StockItemID
-                left join StockItemHoldings sih on sih.StockItemID = si.StockItemID
+                inner join dbo.StockItems si on j.StockItemID = si.StockItemID
+                left join dbo.StockItemHoldings sih on sih.StockItemID = si.StockItemID
 
-                if not exists (select 1 from InvoiceLines where InvoiceID = @NewInvoiceID)
+                if not exists (select 1 from dbo.InvoiceLines where InvoiceID = @NewInvoiceID)
                     throw 54000, 'La factura debe tener al menos una línea de producto.', 1
             commit transaction
             print 'Factura insertada correctamente. Nuevo InvoiceID = ' + cast(@NewInvoiceID as varchar(20)) + ' (Cliente: ' + cast(@CustomerID as varchar(20)) + ')';
@@ -273,9 +273,9 @@ as
                 select @TotalDryItems = coalesce(sum(case when si.IsChillerStock = 0 then j.Quantity else 0 end), 0),
                        @TotalChillerItems = coalesce(sum(case when si.IsChillerStock = 1 then j.Quantity else 0 end), 0)
                 from openjson(@LinesJson) with (StockItemID int '$.StockItemID', Quantity int '$.Quantity') j
-                join StockItems si on si.StockItemID = j.StockItemID;
+                join dbo.StockItems si on si.StockItemID = j.StockItemID;
 
-                update Invoices
+                update dbo.Invoices
                 set
                     CustomerID = @CustomerID,
                     BillToCustomerID = isnull(@BillToCustomerID, @CustomerID),
@@ -295,10 +295,10 @@ as
                 if @@rowcount = 0
                     throw 54001, 'La factura indicada no existe.', 1
 
-                delete from InvoiceLines
+                delete from dbo.InvoiceLines
                 where InvoiceID = @InvoiceID
 
-                insert into InvoiceLines (
+                insert into dbo.InvoiceLines (
                     InvoiceID, StockItemID, Description, PackageTypeID,
                     Quantity, UnitPrice, TaxRate, TaxAmount, LineProfit, ExtendedPrice, LastEditedBy
                 )
@@ -320,10 +320,10 @@ as
                     Quantity int '$.Quantity',
                     UnitPrice decimal(18, 2) '$.UnitPrice'
                 ) j
-                inner join StockItems si on j.StockItemID = si.StockItemID
-                left join StockItemHoldings sih on sih.StockItemID = si.StockItemID
+                inner join dbo.StockItems si on j.StockItemID = si.StockItemID
+                left join dbo.StockItemHoldings sih on sih.StockItemID = si.StockItemID
 
-                if not exists (select 1 from InvoiceLines where InvoiceID = @InvoiceID)
+                if not exists (select 1 from dbo.InvoiceLines where InvoiceID = @InvoiceID)
                     throw 54002, 'La factura debe tener al menos una línea de producto.', 1
             commit transaction
             print 'Factura actualizada correctamente. InvoiceID = ' + cast(@InvoiceID as varchar(20)) + ' (Cliente: ' + cast(@CustomerID as varchar(20)) + ')';
@@ -347,10 +347,10 @@ as
         set nocount on
         begin try
             begin transaction
-                delete from InvoiceLines
+                delete from dbo.InvoiceLines
                 where InvoiceID = @InvoiceID
 
-                delete from Invoices
+                delete from dbo.Invoices
                 where InvoiceID = @InvoiceID
 
                 if @@rowcount = 0

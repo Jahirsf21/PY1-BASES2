@@ -42,18 +42,18 @@ as
                 if exists (
                     select 1
                     from @SelectedStockGroups selected
-                    where not exists (select 1 from StockGroups sg where sg.StockGroupID = selected.StockGroupID)
+                    where not exists (select 1 from dbo.StockGroups sg where sg.StockGroupID = selected.StockGroupID)
                 )
                     throw 50005, 'Una o más categorías indicadas no existen en la base de datos.', 1;
             end
-        select @TotalCount = count(*) from StockItems s
+        select @TotalCount = count(*) from dbo.StockItems s
         where
             s.StockItemName like '%' + isnull(@StockItemName, '') + '%'
-            and exists (select 1 from StockItemHoldings sih where sih.StockItemID = s.StockItemID)
+            and exists (select 1 from dbo.StockItemHoldings sih where sih.StockItemID = s.StockItemID)
             and exists (
                 select 1
-                from StockItemStockGroups sig
-                inner join StockGroups sg on sig.StockGroupID = sg.StockGroupID
+                from dbo.StockItemStockGroups sig
+                inner join dbo.StockGroups sg on sig.StockGroupID = sg.StockGroupID
                 where sig.StockItemID = s.StockItemID
             )
             and not exists (
@@ -61,7 +61,7 @@ as
                 from @SelectedStockGroups selected
                 where not exists (
                     select 1
-                    from StockItemStockGroups sig
+                    from dbo.StockItemStockGroups sig
                     where sig.StockItemID = s.StockItemID
                         and sig.StockGroupID = selected.StockGroupID
                 )
@@ -71,10 +71,10 @@ as
             s.StockItemName as NombreProducto,
             string_agg(sg.StockGroupName, ', ') as NombreGrupoProducto,
             sih.QuantityOnHand as CantidadTotalEnInventarios
-        from StockItems s
-        inner join StockItemHoldings sih on s.StockItemID = sih.StockItemID
-        inner join StockItemStockGroups sig on s.StockItemID = sig.StockItemID
-        inner join StockGroups sg on sig.StockGroupID = sg.StockGroupID
+        from dbo.StockItems s
+        inner join dbo.StockItemHoldings sih on s.StockItemID = sih.StockItemID
+        inner join dbo.StockItemStockGroups sig on s.StockItemID = sig.StockItemID
+        inner join dbo.StockGroups sg on sig.StockGroupID = sg.StockGroupID
         where
             s.StockItemName like '%' + isnull(@StockItemName, '') + '%'
             and not exists (
@@ -82,7 +82,7 @@ as
                 from @SelectedStockGroups selected
                 where not exists (
                     select 1
-                    from StockItemStockGroups sig2
+                    from dbo.StockItemStockGroups sig2
                     where sig2.StockItemID = s.StockItemID
                         and sig2.StockGroupID = selected.StockGroupID
                 )
@@ -105,7 +105,7 @@ as
         select
             StockGroupID,
             StockGroupName as NombreGrupoProducto
-        from StockGroups
+        from dbo.StockGroups
         order by StockGroupID
     end
 go
@@ -138,12 +138,12 @@ as
             si.SearchDetails as PalabrasClave,
             sih.QuantityOnHand as CantidadDisponible,
             sih.BinLocation as Ubicacion
-        from StockItems si
-        inner join Suppliers sp on si.SupplierID = sp.SupplierID
-        left join Colors co on si.ColorID = co.ColorID
-        inner join PackageTypes pu on si.UnitPackageID = pu.PackageTypeID
-        inner join PackageTypes po on si.OuterPackageID = po.PackageTypeID
-        inner join StockItemHoldings sih on si.StockItemID = sih.StockItemID
+        from dbo.StockItems si
+        inner join dbo.Suppliers sp on si.SupplierID = sp.SupplierID
+        left join dbo.Colors co on si.ColorID = co.ColorID
+        inner join dbo.PackageTypes pu on si.UnitPackageID = pu.PackageTypeID
+        inner join dbo.PackageTypes po on si.OuterPackageID = po.PackageTypeID
+        inner join dbo.StockItemHoldings sih on si.StockItemID = sih.StockItemID
         where si.StockItemID = @StockItemID
     end
 go
@@ -160,8 +160,8 @@ as
         select
             sg.StockGroupID,
             sg.StockGroupName as NombreGrupoProducto
-        from StockItemStockGroups sig
-        inner join StockGroups sg on sg.StockGroupID = sig.StockGroupID
+        from dbo.StockItemStockGroups sig
+        inner join dbo.StockGroups sg on sg.StockGroupID = sig.StockGroupID
         where sig.StockItemID = @StockItemID
     end
 go
@@ -199,12 +199,12 @@ as
             sih.TargetStockLevel,
             sih.QuantityOnHand,
             sih.BinLocation
-        from StockItems si
-        inner join Suppliers sp on sp.SupplierID = si.SupplierID
-        left join Colors co on co.ColorID = si.ColorID
-        inner join PackageTypes pu on pu.PackageTypeID = si.UnitPackageID
-        inner join PackageTypes po on po.PackageTypeID = si.OuterPackageID
-        inner join StockItemHoldings sih on sih.StockItemID = si.StockItemID
+        from dbo.StockItems si
+        inner join dbo.Suppliers sp on sp.SupplierID = si.SupplierID
+        left join dbo.Colors co on co.ColorID = si.ColorID
+        inner join dbo.PackageTypes pu on pu.PackageTypeID = si.UnitPackageID
+        inner join dbo.PackageTypes po on po.PackageTypeID = si.OuterPackageID
+        inner join dbo.StockItemHoldings sih on sih.StockItemID = si.StockItemID
         where si.StockItemID = @StockItemID
     end
 go
@@ -220,7 +220,7 @@ as
         select
             ColorID,
             ColorName
-        from Colors
+        from dbo.Colors
     end
 go
 
@@ -235,7 +235,7 @@ as
         select
             PackageTypeID,
             PackageTypeName
-        from PackageTypes
+        from dbo.PackageTypes
     end
 go
 
@@ -274,7 +274,7 @@ as
         begin try
             begin transaction
                 declare @InsertedIDs table (StockItemID int)
-                insert into StockItems (
+                insert into dbo.StockItems (
                     StockItemName, SupplierID, ColorID, UnitPackageID, OuterPackageID,
                     Brand, Size, LeadTimeDays, QuantityPerOuter, IsChillerStock, Barcode,
                     TaxRate, UnitPrice, RecommendedRetailPrice, TypicalWeightPerUnit, LastEditedBy
@@ -286,12 +286,12 @@ as
                     @TaxRate, @UnitPrice, @RecommendedRetailPrice, coalesce(@TypicalWeightPerUnit,0), @LastEditedBy
                 )
                 select @NewStockItemID = StockItemID from @InsertedIDs
-                insert into StockItemHoldings
+                insert into dbo.StockItemHoldings
                     (StockItemID, QuantityOnHand, BinLocation, LastStocktakeQuantity,
                      LastCostPrice, ReorderLevel, TargetStockLevel, LastEditedBy)
                 values (@NewStockItemID, @QuantityOnHand, coalesce(@BinLocation,N''), 0,
                         @LastCostPrice, @ReorderLevel, @TargetStockLevel, @LastEditedBy)
-                insert into StockItemStockGroups (StockItemID, StockGroupID, LastEditedBy)
+                insert into dbo.StockItemStockGroups (StockItemID, StockGroupID, LastEditedBy)
                 select @NewStockItemID, g.[value], @LastEditedBy
                 from openjson(@StockGroupIDsJson) g
             commit transaction
@@ -340,7 +340,7 @@ as
         set nocount on
         begin try
             begin transaction
-                update StockItems
+                update dbo.StockItems
                 set
                     StockItemName = @StockItemName,
                     LeadTimeDays = @LeadTimeDays,
@@ -361,7 +361,7 @@ as
                 where StockItemID = @StockItemID
                 if @@rowcount = 0
                     throw 53000, 'El producto indicado no existe.', 1
-                update StockItemHoldings
+                update dbo.StockItemHoldings
                 set QuantityOnHand = @QuantityOnHand,
                     BinLocation = coalesce(@BinLocation,N''),
                     LastCostPrice = @LastCostPrice,
@@ -370,15 +370,15 @@ as
                     LastEditedBy = @LastEditedBy
                 where StockItemID = @StockItemID
                 if @@rowcount = 0
-                    insert into StockItemHoldings
+                    insert into dbo.StockItemHoldings
                         (StockItemID, QuantityOnHand, BinLocation, LastStocktakeQuantity,
                          LastCostPrice, ReorderLevel, TargetStockLevel, LastEditedBy)
                     values (@StockItemID, @QuantityOnHand, coalesce(@BinLocation,N''), 0,
                             @LastCostPrice, @ReorderLevel, @TargetStockLevel, @LastEditedBy)
-                delete from StockItemStockGroups
+                delete from dbo.StockItemStockGroups
                 where StockItemID = @StockItemID
 
-                insert into StockItemStockGroups (StockItemID, StockGroupID, LastEditedBy)
+                insert into dbo.StockItemStockGroups (StockItemID, StockGroupID, LastEditedBy)
                 select @StockItemID, g.[value], @LastEditedBy
                 from openjson(@StockGroupIDsJson) g
             commit transaction
@@ -405,13 +405,13 @@ as
         set nocount on
         begin try
             begin transaction
-                delete from StockItemStockGroups
+                delete from dbo.StockItemStockGroups
                 where StockItemID = @StockItemID
 
-                delete from StockItemHoldings
+                delete from dbo.StockItemHoldings
                 where StockItemID = @StockItemID
 
-                delete from StockItems
+                delete from dbo.StockItems
                 where StockItemID = @StockItemID
 
                 if @@rowcount = 0

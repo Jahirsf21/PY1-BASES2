@@ -22,13 +22,13 @@ create or alter procedure Sales.GetCustomers
 as
     begin
         set nocount on;
-        if @CustomerCategoryID is not null and not exists (select 1 from CustomerCategories where CustomerCategoryID = @CustomerCategoryID)
+        if @CustomerCategoryID is not null and not exists (select 1 from dbo.CustomerCategories where CustomerCategoryID = @CustomerCategoryID)
             throw 51003, 'La categoría de cliente indicada no existe.', 1;
-        if @DeliveryMethodID is not null and not exists (select 1 from DeliveryMethods where DeliveryMethodID = @DeliveryMethodID)
+        if @DeliveryMethodID is not null and not exists (select 1 from dbo.DeliveryMethods where DeliveryMethodID = @DeliveryMethodID)
             throw 51004, 'El método de entrega indicado no existe.', 1;
-        select @TotalCount = count(*) from Customers cs
-        inner join CustomerCategories cg on cs.CustomerCategoryID = cg.CustomerCategoryID
-        inner join DeliveryMethods dv on cs.DeliveryMethodID = dv.DeliveryMethodID
+        select @TotalCount = count(*) from dbo.Customers cs
+        inner join dbo.CustomerCategories cg on cs.CustomerCategoryID = cg.CustomerCategoryID
+        inner join dbo.DeliveryMethods dv on cs.DeliveryMethodID = dv.DeliveryMethodID
         where
             (@CustomerName is null or cs.CustomerName like '%' + @CustomerName + '%')
             and (@CustomerCategoryID is null or cs.CustomerCategoryID = @CustomerCategoryID)
@@ -39,9 +39,9 @@ as
             cs.CustomerName as NombreCliente,
             cg.CustomerCategoryName as NombreCategoriaCliente,
             dv.DeliveryMethodName as NombreMetodoEntrega
-        from Customers cs
-        inner join CustomerCategories cg on cs.CustomerCategoryID = cg.CustomerCategoryID
-        inner join DeliveryMethods dv on cs.DeliveryMethodID = dv.DeliveryMethodID
+        from dbo.Customers cs
+        inner join dbo.CustomerCategories cg on cs.CustomerCategoryID = cg.CustomerCategoryID
+        inner join dbo.DeliveryMethods dv on cs.DeliveryMethodID = dv.DeliveryMethodID
         where
             (@CustomerName is null or cs.CustomerName like '%' + @CustomerName + '%')
             and (@CustomerCategoryID is null or cs.CustomerCategoryID = @CustomerCategoryID)
@@ -66,12 +66,12 @@ create or alter procedure Sales.GetBillToCustomers
 as
     begin
         set nocount on
-        select @TotalCount = count(*) from Customers
+        select @TotalCount = count(*) from dbo.Customers
         where @CustomerName is null or CustomerName like '%' + @CustomerName + '%'
         select
             CustomerID,
             CustomerName as NombreCliente
-        from Customers
+        from dbo.Customers
         where @CustomerName is null or CustomerName like '%' + @CustomerName + '%'
         order by CustomerName, CustomerID
         offset(@PageNumber - 1) * @PageSize rows
@@ -98,11 +98,11 @@ as
             dv.DeliveryMethodName as NombreMetodoEntrega,
             cs.PaymentDays as DiasGraciaPago,
             cs.WebSiteURL as SitioWeb
-        from Customers cs
-        inner join CustomerCategories cg on cs.CustomerCategoryID = cg.CustomerCategoryID
-        left join BuyingGroups bg on cs.BuyingGroupID = bg.BuyingGroupID
-        inner join DeliveryMethods dv on cs.DeliveryMethodID = dv.DeliveryMethodID
-        inner join Customers bill on bill.CustomerID = cs.BillToCustomerID
+        from dbo.Customers cs
+        inner join dbo.CustomerCategories cg on cs.CustomerCategoryID = cg.CustomerCategoryID
+        left join dbo.BuyingGroups bg on cs.BuyingGroupID = bg.BuyingGroupID
+        inner join dbo.DeliveryMethods dv on cs.DeliveryMethodID = dv.DeliveryMethodID
+        inner join dbo.Customers bill on bill.CustomerID = cs.BillToCustomerID
         where cs.CustomerID = @CustomerID
     end
 go
@@ -146,13 +146,13 @@ as
             cs.PostalAddressLine2 as DireccionPostal2,
             cs.DeliveryLocation.Lat as Latitud,
             cs.DeliveryLocation.Long as Longitud
-        from Customers cs
-        inner join Customers bill on bill.CustomerID = cs.BillToCustomerID
-        inner join People pp on pp.PersonID = cs.PrimaryContactPersonID
-        left join People pa on pa.PersonID = cs.AlternateContactPersonID
-        inner join Cities ci on ci.CityID = cs.DeliveryCityID
-        inner join StateProvinces sp on sp.StateProvinceID = ci.StateProvinceID
-        inner join Countries co on co.CountryID = sp.CountryID
+        from dbo.Customers cs
+        inner join dbo.Customers bill on bill.CustomerID = cs.BillToCustomerID
+        inner join dbo.People pp on pp.PersonID = cs.PrimaryContactPersonID
+        left join dbo.People pa on pa.PersonID = cs.AlternateContactPersonID
+        inner join dbo.Cities ci on ci.CityID = cs.DeliveryCityID
+        inner join dbo.StateProvinces sp on sp.StateProvinceID = ci.StateProvinceID
+        inner join dbo.Countries co on co.CountryID = sp.CountryID
         where cs.CustomerID = @CustomerID
     end
 go
@@ -175,9 +175,9 @@ as
             pa.PhoneNumber as TelefonoAlternativo,
             pa.FaxNumber as FaxAlternativo,
             pa.EmailAddress as CorreoAlternativo
-        from Customers cs
-        inner join People pp on cs.PrimaryContactPersonID = pp.PersonID
-        left join People pa on cs.AlternateContactPersonID = pa.PersonID
+        from dbo.Customers cs
+        inner join dbo.People pp on cs.PrimaryContactPersonID = pp.PersonID
+        left join dbo.People pa on cs.AlternateContactPersonID = pa.PersonID
         where cs.CustomerID = @CustomerID
     end
 go
@@ -207,13 +207,13 @@ as
             cs.PostalPostalCode as CodigoPostalPostal,
             cs.DeliveryLocation.Lat as Latitud,
             cs.DeliveryLocation.Long as Longitud
-        from Customers cs
-        inner join Cities ci on cs.DeliveryCityID = ci.CityID
-        inner join StateProvinces sp on ci.StateProvinceID = sp.StateProvinceID
-        inner join Countries co on sp.CountryID = co.CountryID
-        inner join Cities ci2 on cs.PostalCityID = ci2.CityID
-        inner join StateProvinces sp2 on ci2.StateProvinceID = sp2.StateProvinceID
-        inner join Countries co2 on sp2.CountryID = co2.CountryID
+        from dbo.Customers cs
+        inner join dbo.Cities ci on cs.DeliveryCityID = ci.CityID
+        inner join dbo.StateProvinces sp on ci.StateProvinceID = sp.StateProvinceID
+        inner join dbo.Countries co on sp.CountryID = co.CountryID
+        inner join dbo.Cities ci2 on cs.PostalCityID = ci2.CityID
+        inner join dbo.StateProvinces sp2 on ci2.StateProvinceID = sp2.StateProvinceID
+        inner join dbo.Countries co2 on sp2.CountryID = co2.CountryID
         where cs.CustomerID = @CustomerID
     end
 go
@@ -229,7 +229,7 @@ as
         select
             CustomerCategoryID,
             CustomerCategoryName as NombreCategoria
-        from CustomerCategories
+        from dbo.CustomerCategories
         order by CustomerCategoryID
     end
 go
@@ -246,7 +246,7 @@ as
         select
             BuyingGroupID,
             BuyingGroupName as NombreGrupoCompra
-        from BuyingGroups
+        from dbo.BuyingGroups
         order by BuyingGroupID
     end
 go
@@ -289,7 +289,7 @@ as
         set nocount on
         begin try
             if not exists (
-                select 1 from People
+                select 1 from dbo.People
                 where PersonID = @LastEditedBy and IsEmployee = 1
             )
                 throw 51002, 'El LastEditedBy indicado no corresponde a un empleado válido.', 1
@@ -297,7 +297,7 @@ as
             begin transaction
                 set @NewCustomerID = next value for Sequences.CustomerID
 
-                insert into Customers (
+                insert into dbo.Customers (
                     CustomerID, CustomerName, BillToCustomerID, CustomerCategoryID, BuyingGroupID,
                     PrimaryContactPersonID, AlternateContactPersonID, DeliveryMethodID,
                     AccountOpenedDate, StandardDiscountPercentage, CreditLimit, IsStatementSent, IsOnCreditHold,
@@ -369,13 +369,13 @@ as
         set nocount on
         begin try
             if not exists (
-                select 1 from People
+                select 1 from dbo.People
                 where PersonID = @LastEditedBy and IsEmployee = 1
             )
                 throw 51002, 'El LastEditedBy indicado no corresponde a un empleado válido.', 1
 
             begin transaction
-                update Customers
+                update dbo.Customers
                 set
                     CustomerName = @CustomerName,
                     BillToCustomerID = @BillToCustomerID,
@@ -431,7 +431,7 @@ as
         set nocount on
         begin try
             begin transaction
-                delete from Customers
+                delete from dbo.Customers
                 where CustomerID = @CustomerID
 
                 if @@rowcount = 0
