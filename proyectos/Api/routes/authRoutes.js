@@ -1,12 +1,13 @@
 import { Router } from 'express'
 import { login } from '../controllers/authController.js'
 
-// Rutas de autenticación.
+// Rutas de Autenticación.
 const router = Router()
 
 /**
  * POST /auth/login
- * Comprueba las credenciales y devuelve los datos del usuario activo.
+ * Inicia sesión y devuelve un token JWT de 24 horas y los datos del usuario.
+ * Ruta pública, sin token de autenticación.
  * Body: userName, password
  */
 router.post('/auth/login', login)

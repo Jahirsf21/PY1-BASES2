@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import {env} from './config/env.js'
 
+import { verifyToken } from './middleware/auth.js'
 import authRoutes from './routes/authRoutes.js'
 import customersRoutes from './routes/customersRoutes.js'
 import supplierRoutes from './routes/suppliersRoutes.js'
@@ -20,6 +21,7 @@ app.use(express.json())
 
 // Rutas de la API
 app.use('/api', authRoutes)
+app.use('/api', verifyToken)
 app.use('/api', customersRoutes)
 app.use('/api', supplierRoutes)
 app.use('/api', stockItemsRoutes)

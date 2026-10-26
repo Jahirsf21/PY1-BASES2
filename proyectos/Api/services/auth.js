@@ -2,8 +2,8 @@ import {getPool} from '../config/database.js'
 import sql from "mssql"
 
 /**
- * Obtiene los datos de un usuario activo mediante sus credenciales.
- * La contraseña se compara mediante SHA2_256 en el procedimiento almacenado.
+ * Obtiene los datos de un usuario activo mediante dbo.LoginUser.
+ * El procedimiento compara la contraseña recibida con el hash SHA2_256 almacenado.
  *
  * @param {string} userName Nombre del usuario.
  * @param {string} password Contraseña del usuario.

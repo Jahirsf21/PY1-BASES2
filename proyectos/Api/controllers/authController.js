@@ -1,12 +1,14 @@
 import { validateLogin } from '../helpers/entityValidation.js'
+import { generate_token } from '../middleware/auth.js'
 import { loginUser } from '../services/auth.js'
 
 /**
- * Comprueba las credenciales de un usuario activo.
+ * Inicia sesión con las credenciales de un usuario activo.
+ * Devuelve un token de autenticación de 24 horas y los datos del usuario.
  *
- * @param {import('express').Request} req Petición HTTP con userName y password en req.body.
+ * @param {import('express').Request} req Petición HTTP. Espera userName y password en req.body.
  * @param {import('express').Response} res Respuesta HTTP.
- * @returns {Promise<import('express').Response>} Datos del usuario o 401 si las credenciales no son válidas.
+ * @returns {Promise<import('express').Response>} Respuesta JSON con el token y los datos del usuario.
  */
 export async function login(req, res) {
     const credentials = req.body
@@ -18,11 +20,12 @@ export async function login(req, res) {
         return res.status(400).json({message: errors[fields[0]], fields, errors})
     }
     try {
-        const users = await loginUser(credentials.userName, credentials.password)
-        if (users.length === 0) {
+        const [user] = await loginUser(credentials.userName, credentials.password)
+        if (!user) {
             return res.status(401).json({message: 'Credenciales inválidas'})
         }
-        return res.json(users[0])
+        const token = generate_token({userID: user.UserID, userName: user.UserName})
+        return res.json({token, user})
     } catch (error) {
         return res.status(500).json({message: 'Error al iniciar sesión'})
     }
