@@ -57,7 +57,7 @@ as
 go
 
 /*
-    Obtiene las personas registradas como empleados para los formularios.
+    Obtiene las personas registradas como empleados para los formularios, ordenadas por nombre e identificador.
     Devuelve: PersonID, NombreCompleto.
 */
 create or alter procedure Application.GetEmployee
@@ -69,6 +69,7 @@ as
             FullName as NombreCompleto
         from People
         where IsEmployee = 1
+        order by FullName, PersonID
     end
 go
 
@@ -80,7 +81,7 @@ begin
     select PersonID, FullName as NombreCompleto
     from People
     where IsSalesperson = 1
-    order by FullName
+    order by FullName, PersonID
 end
 go
 

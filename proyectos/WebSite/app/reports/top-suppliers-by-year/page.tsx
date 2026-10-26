@@ -18,8 +18,7 @@ const columns: ReportColumn<TopSupplierByYear>[] = [
 ]
 
 async function loadRanking(filters: YearRangeFilters) {
-  const rows = await getTopSuppliersByYear(filters.yearFrom, filters.yearTo)
-  return rows.sort((first, second) => first.Año - second.Año || first.Ranking - second.Ranking || first.NombreProveedor.localeCompare(second.NombreProveedor, 'es'))
+  return getTopSuppliersByYear(filters.yearFrom, filters.yearTo)
 }
 
 export default function TopSuppliersByYearPage() {

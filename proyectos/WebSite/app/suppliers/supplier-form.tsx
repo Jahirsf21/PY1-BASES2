@@ -58,7 +58,7 @@ export function SupplierForm({ initial }: { initial?: SupplierEdit }) {
         if (!cancelled) {
           setCategories(supplierCategories)
           setMethods(deliveryMethods)
-          setEmployees(employeeList.sort((a, b) => a.NombreCompleto.localeCompare(b.NombreCompleto)))
+          setEmployees(employeeList)
           setLastEditedBy((selected) => employeeList.some((employee) => employee.PersonID === selected) ? selected : null)
         }
       })

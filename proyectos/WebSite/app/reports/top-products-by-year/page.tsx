@@ -17,8 +17,7 @@ const columns: ReportColumn<TopProductByYear>[] = [
 ]
 
 async function loadRanking(filters: YearFilters) {
-  const rows = await getTopProductsByYear(filters.year)
-  return rows.sort((first, second) => first.Año - second.Año || Number(first.Ranking) - Number(second.Ranking) || first.NombreProducto.localeCompare(second.NombreProducto, 'es'))
+  return getTopProductsByYear(filters.year)
 }
 
 export default function TopProductsByYearPage() {

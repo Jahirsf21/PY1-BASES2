@@ -92,8 +92,8 @@ export function InvoiceForm({initial, initialLines = []}: {initial?: InvoiceEdit
     Promise.all([getDeliveryMethods(), getEmployees(), getSalespeople()]).then(([deliveryMethods, people, sellers]) => {
       if (cancelled) return
       setMethods(deliveryMethods)
-      setEmployees(people.sort((a, b) => a.NombreCompleto.localeCompare(b.NombreCompleto)))
-      setSalespeople(sellers.sort((a, b) => a.NombreCompleto.localeCompare(b.NombreCompleto)))
+      setEmployees(people)
+      setSalespeople(sellers)
     }).catch(() => {
       if (cancelled) return
       setCatalogError(true)

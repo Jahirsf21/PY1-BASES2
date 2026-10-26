@@ -8,7 +8,7 @@ go
 -- ======================================================================================
 
 /*
-    Obtiene los proveedores paginados, ordenados por identificador.
+    Obtiene los proveedores paginados, ordenados por nombre y luego por identificador.
     Incluye el total de registros (TotalCount) para calcular la paginación en el cliente.
     Devuelve: SupplierID, NombreProveedor, NombreCategoriaProveedor, NombreMetodoEntrega
 */
@@ -45,7 +45,7 @@ as
             (@SupplierName is null or sp.SupplierName like '%' + @SupplierName + '%')
             and (@SupplierCategoryID is null or sp.SupplierCategoryID = @SupplierCategoryID)
             and (@DeliveryMethodID is null or sp.DeliveryMethodID = @DeliveryMethodID)
-        order by sp.SupplierID
+        order by sp.SupplierName, sp.SupplierID
         offset(@PageNumber - 1) * @PageSize rows
         fetch next @PageSize rows only
     end
@@ -219,6 +219,7 @@ as
 		set nocount on
 		select distinct year(OrderDate) as Año
 		from PurchaseOrders
+		order by Año
 	end
 go
 

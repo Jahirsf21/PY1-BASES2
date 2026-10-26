@@ -23,6 +23,7 @@ as
             (@SupplierName is null or sp.SupplierName like '%' + @SupplierName + '%')
             and (@SupplierCategoryID is null or sp.SupplierCategoryID = @SupplierCategoryID)
 		group by rollup ((sp.SupplierName, sg.SupplierCategoryName))
+		order by grouping(sp.SupplierName), sp.SupplierName, sg.SupplierCategoryName
 	end
 go
 
@@ -65,7 +66,7 @@ as
 		where (@CustomerName is null or cs.CustomerName like '%' + @CustomerName + '%')
 			and (@CustomerCategoryID is null or cg.CustomerCategoryID = @CustomerCategoryID)
 		group by rollup ((cs.CustomerName, cg.CustomerCategoryName))
-		order by grouping(cs.CustomerName), cs.CustomerName
+		order by grouping(cs.CustomerName), cs.CustomerName, cg.CustomerCategoryName
 		offset (@PageNumber - 1) * @PageSize rows
 		fetch next @PageSize rows only
 	end
@@ -83,6 +84,7 @@ as
         with Profits as (
             select  
                 year(iv.InvoiceDate) as Año,
+                s.StockItemID,
                 s.StockItemName as NombreProducto,
                 sum(ivl.LineProfit) as Ganancia,
                 dense_rank() over(partition by year(iv.InvoiceDate) order by sum(ivl.LineProfit) desc) as Ranking
@@ -99,7 +101,7 @@ as
             Ranking
         from Profits
         where Ranking <= 5
-        order by Año, Ranking
+        order by Año, Ranking, NombreProducto, StockItemID
     end
 go
 
@@ -123,6 +125,7 @@ as
         with TopCustomers as (
             select
                 year(iv.InvoiceDate) as Año,
+                cs.CustomerID,
                 cs.CustomerName as NombreCliente,
                 count(distinct iv.InvoiceID) as CantidadFacturas,
                 sum(ivl.ExtendedPrice) as MontoFacturado,
@@ -143,7 +146,7 @@ as
             Ranking
         from TopCustomers
         where Ranking <= 5
-        order by Año, Ranking
+        order by Año, Ranking, NombreCliente, CustomerID
     end 
 go
 
@@ -167,6 +170,7 @@ as
         with TopSuppliers as (
             select
                 year(po.OrderDate) as Año,
+                sp.SupplierID,
                 sp.SupplierName as NombreProveedor,
                 count(distinct po.PurchaseOrderID) as CantidadCompras,
                 sum(pol.OrderedOuters * pol.ExpectedUnitPricePerOuter) as MontoComprado,
@@ -187,6 +191,7 @@ as
             Ranking
         from TopSuppliers
         where Ranking <= 5
+        order by Año, Ranking, NombreProveedor, SupplierID
     end
 go
 
@@ -376,7 +381,7 @@ as
 		inner join Customers cs on apv.CustomerID = cs.CustomerID
 		inner join StockGroupsByPeriod sgbp on apv.CustomerID = sgbp.CustomerID and apv.Año = sgbp.Año and apv.Mes = sgbp.Mes
 		group by cs.CustomerID, cs.CustomerName, apv.Año, apv.Mes
-		order by cs.CustomerName, apv.Año, apv.Mes
+		order by cs.CustomerName, apv.Año, apv.Mes, cs.CustomerID
 		offset (@PageNumber - 1) * @PageSize rows
 		fetch next @PageSize rows only
 	end
@@ -536,7 +541,7 @@ as
 		inner join Suppliers sp on app.SupplierID = sp.SupplierID
 		inner join StockGroupsByPeriod sgbp on app.SupplierID = sgbp.SupplierID and app.Año = sgbp.Año and app.Mes = sgbp.Mes
 		group by sp.SupplierID, sp.SupplierName, app.Año, app.Mes
-		order by sp.SupplierName, app.Año, app.Mes
+		order by sp.SupplierName, app.Año, app.Mes, sp.SupplierID
 		offset (@PageNumber - 1) * @PageSize rows
 		fetch next @PageSize rows only
 	end

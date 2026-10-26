@@ -8,7 +8,7 @@ go
 -- ======================================================================================
 
 /*
-    Obtiene las facturas paginadas, ordenadas por identificador.
+    Obtiene las facturas paginadas, ordenadas por nombre del cliente y luego por identificador.
     Incluye el total de registros (TotalCount) para calcular la paginación en el cliente.
     Devuelve: NumeroFactura, FechaFactura, NombreCliente, NombreMetodoEntrega, MontoFacturado
 */
@@ -63,7 +63,7 @@ as
         group by iv.InvoiceID, iv.InvoiceDate, cs.CustomerName, dv.DeliveryMethodName
         having (@MinInvoiceAmount is null or sum(ivl.ExtendedPrice) >= @MinInvoiceAmount)
             and (@MaxInvoiceAmount is null or sum(ivl.ExtendedPrice) <= @MaxInvoiceAmount)
-        order by iv.InvoiceID
+        order by cs.CustomerName, iv.InvoiceID
         offset(@PageNumber - 1) * @PageSize rows
         fetch next @PageSize rows only
     end
@@ -159,6 +159,7 @@ as
 		set nocount on
 		select distinct year(InvoiceDate) as Año
 		from Invoices
+		order by Año
 	end
 go
 

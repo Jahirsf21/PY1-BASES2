@@ -76,7 +76,7 @@ export function CustomerForm({ initial }: { initial?: CustomerEdit }) {
           setCategories(customerCategories)
           setGroups(buyingGroups)
           setMethods(deliveryMethods)
-          setEmployees(employeeList.sort((a, b) => a.NombreCompleto.localeCompare(b.NombreCompleto)))
+          setEmployees(employeeList)
           setLastEditedBy((selected) => employeeList.some((employee) => employee.PersonID === selected) ? selected : null)
         }
       })

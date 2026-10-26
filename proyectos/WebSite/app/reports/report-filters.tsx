@@ -111,7 +111,7 @@ function useReportYears(source: ReportYearSource) {
       setError(null)
       try {
         const result = source === 'invoices' ? await getInvoiceYears() : await getPurchaseYears()
-        if (!cancelled) setYears(result.map((row) => row.Año).sort((first, second) => first - second))
+        if (!cancelled) setYears(result.map((row) => row.Año))
       } catch (error) {
         if (!cancelled) {
           const message = error instanceof Error ? error.message : 'No fue posible obtener los años disponibles'

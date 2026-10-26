@@ -8,7 +8,7 @@ go
 -- ======================================================================================
 
 /*
-    Obtiene los clientes paginados, ordenados por identificador.
+    Obtiene los clientes paginados, ordenados por nombre y luego por identificador.
     Incluye el total de registros (TotalCount) para calcular la paginación en el cliente.
     Devuelve: CustomerID, NombreCliente, NombreCategoriaCliente, NombreMetodoEntrega
 */
@@ -46,14 +46,14 @@ as
             (@CustomerName is null or cs.CustomerName like '%' + @CustomerName + '%')
             and (@CustomerCategoryID is null or cs.CustomerCategoryID = @CustomerCategoryID)
             and (@DeliveryMethodID is null or cs.DeliveryMethodID = @DeliveryMethodID)
-        order by cs.CustomerID
+        order by cs.CustomerName, cs.CustomerID
         offset(@PageNumber - 1) * @PageSize rows
         fetch next @PageSize rows only
     end
 go
 
 /*
-    Obtiene el listado de clientes (ID y nombre) paginado
+    Obtiene el listado de clientes (ID y nombre) paginado, ordenado por nombre e identificador.
     Permite filtrar opcionalmente por nombre de cliente.
     Incluye el total de registros (TotalCount) para calcular la paginación en el cliente.
     Devuelve: CustomerID, NombreCliente
@@ -73,7 +73,7 @@ as
             CustomerName as NombreCliente
         from Customers
         where @CustomerName is null or CustomerName like '%' + @CustomerName + '%'
-        order by CustomerID
+        order by CustomerName, CustomerID
         offset(@PageNumber - 1) * @PageSize rows
         fetch next @PageSize rows only
     end

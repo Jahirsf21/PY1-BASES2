@@ -18,12 +18,7 @@ const columns: ReportColumn<SupplierPurchaseSummary>[] = [
 ]
 
 async function loadSummary(filters: SupplierPurchaseSummaryFilters) {
-  const rows = await getSupplierPurchaseSummary(filters.supplierName, filters.supplierCategoryID)
-  return rows.sort((first, second) => {
-    const firstIsSummary = first.NombreProveedor === 'Resumen' && !first.NombreCategoriaProveedor.trim()
-    const secondIsSummary = second.NombreProveedor === 'Resumen' && !second.NombreCategoriaProveedor.trim()
-    return Number(firstIsSummary) - Number(secondIsSummary) || first.NombreProveedor.localeCompare(second.NombreProveedor, 'es')
-  })
+  return getSupplierPurchaseSummary(filters.supplierName, filters.supplierCategoryID)
 }
 
 export default function SupplierPurchaseSummaryPage() {

@@ -78,7 +78,7 @@ export function StockItemForm({ initial, initialGroups = [] }: { initial?: Stock
     Promise.all([getEmployees(), getColors(), getPackageTypes(), getStockGroups()])
       .then(([people, availableColors, availablePackages, availableGroups]) => {
         if (cancelled) return
-        setEmployees(people.sort((a, b) => a.NombreCompleto.localeCompare(b.NombreCompleto)))
+        setEmployees(people)
         setColors(availableColors)
         setPackages(availablePackages)
         setGroups(availableGroups)

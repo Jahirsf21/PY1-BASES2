@@ -18,8 +18,7 @@ const columns: ReportColumn<TopCustomerByYear>[] = [
 ]
 
 async function loadRanking(filters: YearRangeFilters) {
-  const rows = await getTopCustomersByYear(filters.yearFrom, filters.yearTo)
-  return rows.sort((first, second) => first.Año - second.Año || first.Ranking - second.Ranking || first.NombreCliente.localeCompare(second.NombreCliente, 'es'))
+  return getTopCustomersByYear(filters.yearFrom, filters.yearTo)
 }
 
 export default function TopCustomersByYearPage() {

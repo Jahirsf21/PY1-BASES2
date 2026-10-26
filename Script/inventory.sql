@@ -88,7 +88,7 @@ as
                 )
             )
         group by s.StockItemID, s.StockItemName, sih.QuantityOnHand
-        order by s.StockItemName
+        order by s.StockItemName, s.StockItemID
         offset(@PageNumber - 1) * @PageSize rows
         fetch next @PageSize rows only
     end
