@@ -27,7 +27,8 @@ export async function getStockItems(
 
   const res = await fetch(`${API_URL}/api/stock-items?${query}`)
   if (!res.ok) {
-    throw new Error('No fue posible obtener los productos')
+    const body = await res.json().catch(() => null)
+    throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener los productos')
   }
   return res.json()
 }
@@ -40,7 +41,8 @@ export async function getStockItems(
 export async function getStockGroups(): Promise<StockGroup[]> {
   const res = await fetch(`${API_URL}/api/stock-items/groups`)
   if (!res.ok) {
-    throw new Error('No fue posible obtener los grupos de productos')
+    const body = await res.json().catch(() => null)
+    throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener los grupos de productos')
   }
   return res.json()
 }
@@ -53,7 +55,8 @@ export async function getStockGroups(): Promise<StockGroup[]> {
 export async function getColors(): Promise<Color[]> {
   const res = await fetch(`${API_URL}/api/stock-items/colors`)
   if (!res.ok) {
-    throw new Error('No fue posible obtener los colores')
+    const body = await res.json().catch(() => null)
+    throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener los colores')
   }
   return res.json()
 }
@@ -66,7 +69,8 @@ export async function getColors(): Promise<Color[]> {
 export async function getPackageTypes(): Promise<PackageType[]> {
   const res = await fetch(`${API_URL}/api/stock-items/package-types`)
   if (!res.ok) {
-    throw new Error('No fue posible obtener los empaques')
+    const body = await res.json().catch(() => null)
+    throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener los empaques')
   }
   return res.json()
 }
@@ -80,7 +84,9 @@ export async function getPackageTypes(): Promise<PackageType[]> {
 export async function getStockItemByID(stockItemID: number): Promise<StockItemDetail[]> {
   const res = await fetch(`${API_URL}/api/stock-items/${stockItemID}`)
   if (!res.ok) {
-    throw new Error(res.status === 404 ? 'Producto no encontrado' : 'No fue posible obtener el producto')
+    const body = await res.json().catch(() => null)
+    const fallbackMessage = res.status === 404 ? 'Producto no encontrado' : 'No fue posible obtener el producto'
+    throw new Error(typeof body?.message === 'string' ? body.message : fallbackMessage)
   }
   return res.json()
 }
@@ -112,7 +118,9 @@ export async function getStockItemGroupsByID(stockItemID: number): Promise<Stock
 export async function getStockItemForEdit(stockItemID: number): Promise<StockItemEdit> {
   const res = await fetch(`${API_URL}/api/stock-items/${stockItemID}/edit`)
   if (!res.ok) {
-    throw new Error(res.status === 404 ? 'Producto no encontrado' : 'No fue posible cargar el producto para editar')
+    const body = await res.json().catch(() => null)
+    const fallbackMessage = res.status === 404 ? 'Producto no encontrado' : 'No fue posible cargar el producto para editar'
+    throw new Error(typeof body?.message === 'string' ? body.message : fallbackMessage)
   }
   return res.json()
 }

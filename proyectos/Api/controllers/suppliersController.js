@@ -12,10 +12,10 @@ import { getSupplierAddress, getSupplierCategories, getSupplierContacts, getSupp
  */
 export async function listSuppliers(req, res) {
     try {
-        const pageNumber = parseInt(req.query.pageNumber, 10)
-        const pageSize = parseInt(req.query.pageSize, 10)
-        if (pageNumber < 1 || pageSize < 1) {
-            return res.status(400).json({message: 'pageNumber y pageSize deben ser mayores a 0'})
+        const pageNumber = Number(req.query.pageNumber)
+        const pageSize = Number(req.query.pageSize)
+        if (!Number.isInteger(pageNumber) || !Number.isInteger(pageSize) || pageNumber < 1 || pageSize < 1) {
+            return res.status(400).json({message: 'pageNumber y pageSize deben ser enteros mayores a 0'})
         }
         if (pageSize > 100) {
             return res.status(400).json({message: 'pageSize no puede ser mayor a 100'})

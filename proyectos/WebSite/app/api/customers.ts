@@ -23,7 +23,8 @@ export async function getCustomers(customerName: string, customerCategoryID: num
   if (deliveryMethodID !== null) query.set('deliveryMethodID', String(deliveryMethodID))
   const res = await fetch(`${API_URL}/api/customers?${query}`)
   if (!res.ok) {
-    throw new Error('No fue posible obtener los datos de clientes')
+    const body = await res.json().catch(() => null)
+    throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener los datos de clientes')
   }
   return res.json()
 }
@@ -44,7 +45,8 @@ export async function getBillToCustomers(customerName: string, pageNumber: numbe
   })
   const res = await fetch(`${API_URL}/api/customers/bill-to?${query}`)
   if (!res.ok) {
-    throw new Error('No fue posible obtener los clientes por facturar')
+    const body = await res.json().catch(() => null)
+    throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener los clientes por facturar')
   }
   return res.json()
 }
@@ -57,7 +59,8 @@ export async function getBillToCustomers(customerName: string, pageNumber: numbe
 export async function getCustomerCategories(): Promise<CustomerCategory[]> {
   const res = await fetch(`${API_URL}/api/customers/categories`)
   if (!res.ok) {
-    throw new Error('No fue posible obtener las categorías de clientes')
+    const body = await res.json().catch(() => null)
+    throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener las categorías de clientes')
   }
   return res.json()
 }
@@ -70,7 +73,8 @@ export async function getCustomerCategories(): Promise<CustomerCategory[]> {
 export async function getBuyingGroups(): Promise<BuyingGroup[]> {
   const res = await fetch(`${API_URL}/api/customers/buying-groups`)
   if (!res.ok) {
-    throw new Error('No fue posible obtener los grupos de compra')
+    const body = await res.json().catch(() => null)
+    throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener los grupos de compra')
   }
   return res.json()
 }
@@ -84,7 +88,9 @@ export async function getBuyingGroups(): Promise<BuyingGroup[]> {
 export async function getCustomerByID(customerID: number): Promise<CustomerDetail[]> {
   const res = await fetch(`${API_URL}/api/customers/${customerID}`)
   if (!res.ok) {
-    throw new Error(res.status === 404 ? 'Cliente no encontrado' : 'No fue posible obtener el cliente')
+    const body = await res.json().catch(() => null)
+    const fallbackMessage = res.status === 404 ? 'Cliente no encontrado' : 'No fue posible obtener el cliente'
+    throw new Error(typeof body?.message === 'string' ? body.message : fallbackMessage)
   }
   return res.json()
 }
@@ -98,7 +104,8 @@ export async function getCustomerByID(customerID: number): Promise<CustomerDetai
 export async function getCustomerContactsByID(customerID: number): Promise<CustomerContact[]> {
   const res = await fetch(`${API_URL}/api/customers/${customerID}/contacts`)
   if (!res.ok) {
-    throw new Error('No fue posible obtener los contactos del cliente')
+    const body = await res.json().catch(() => null)
+    throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener los contactos del cliente')
   }
   return res.json()
 }
@@ -112,7 +119,8 @@ export async function getCustomerContactsByID(customerID: number): Promise<Custo
 export async function getCustomerAddressByID(customerID: number): Promise<CustomerAddress[]> {
   const res = await fetch(`${API_URL}/api/customers/${customerID}/address`)
   if (!res.ok) {
-    throw new Error('No fue posible obtener la dirección del cliente')
+    const body = await res.json().catch(() => null)
+    throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener la dirección del cliente')
   }
   return res.json()
 }
@@ -126,7 +134,9 @@ export async function getCustomerAddressByID(customerID: number): Promise<Custom
 export async function getCustomerForEdit(customerID: number): Promise<CustomerEdit> {
   const res = await fetch(`${API_URL}/api/customers/${customerID}/edit`)
   if (!res.ok) {
-    throw new Error(res.status === 404 ? 'Cliente no encontrado' : 'No fue posible cargar el cliente para editar')
+    const body = await res.json().catch(() => null)
+    const fallbackMessage = res.status === 404 ? 'Cliente no encontrado' : 'No fue posible cargar el cliente para editar'
+    throw new Error(typeof body?.message === 'string' ? body.message : fallbackMessage)
   }
   return res.json()
 }

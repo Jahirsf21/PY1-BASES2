@@ -9,6 +9,7 @@ go
 
 /*
     Obtiene las facturas paginadas, ordenadas por nombre del cliente y luego por identificador.
+    Valida el orden de los rangos de fechas y montos y que los montos no sean negativos.
     Incluye el total de registros (TotalCount) para calcular la paginación en el cliente.
     Devuelve: NumeroFactura, FechaFactura, NombreCliente, NombreMetodoEntrega, MontoFacturado
 */
@@ -25,7 +26,13 @@ create or alter procedure Sales.GetInvoices
     @TotalCount int = 0 output
 as
     begin
-        set nocount on
+        set nocount on;
+        if @InvoiceDateFrom is not null and @InvoiceDateTo is not null and @InvoiceDateFrom > @InvoiceDateTo
+            throw 54004, 'La fecha inicial no puede ser mayor que la fecha final.', 1;
+        if @MinInvoiceAmount < 0 or @MaxInvoiceAmount < 0
+            throw 54005, 'Los montos no pueden ser negativos.', 1;
+        if @MinInvoiceAmount is not null and @MaxInvoiceAmount is not null and @MinInvoiceAmount > @MaxInvoiceAmount
+            throw 54006, 'El monto mínimo no puede ser mayor que el monto máximo.', 1;
         select @TotalCount = count(*)
         from (
             select iv.InvoiceID

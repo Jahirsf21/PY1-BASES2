@@ -89,13 +89,15 @@ go
 
 /*
     Devuelve los productos con los cinco primeros puestos por ganancia acumulada de cada año.
-    Permite filtrar por un año específico (@Year).
+    Permite filtrar por un año específico (@Year) y valida que exista en la base de datos.
     Devuelve: Año, NombreProducto, Ganancia, Ranking
 */
 create or alter procedure Warehouse.GetTopProductsByYear
     @Year int = null
 as
     begin
+        if @Year is not null and not exists (select 1 from dbo.Invoices where year(InvoiceDate) = @Year)
+            throw 50001, 'El año indicado no existe en la base de datos.', 1;
         with Profits as (
             select  
                 year(iv.InvoiceDate) as Año,

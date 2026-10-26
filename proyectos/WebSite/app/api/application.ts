@@ -12,7 +12,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL
 export async function getDeliveryMethods(): Promise<DeliveryMethod[]> {
   const res = await fetch(`${API_URL}/api/delivery-methods`)
   if (!res.ok) {
-    throw new Error('No fue posible obtener los métodos de entrega')
+    const body = await res.json().catch(() => null)
+    throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener los métodos de entrega')
   }
   return res.json()
 }
@@ -29,7 +30,8 @@ export async function getPeople(fullName: string, pageNumber: number, pageSize: 
   const query = new URLSearchParams({ fullName, pageNumber: String(pageNumber), pageSize: String(pageSize) })
   const res = await fetch(`${API_URL}/api/people?${query}`)
   if (!res.ok) {
-    throw new Error('No fue posible obtener las personas')
+    const body = await res.json().catch(() => null)
+    throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener las personas')
   }
   return res.json()
 }
@@ -46,7 +48,8 @@ export async function getCities(cityName: string, pageNumber: number, pageSize: 
   const query = new URLSearchParams({ cityName, pageNumber: String(pageNumber), pageSize: String(pageSize) })
   const res = await fetch(`${API_URL}/api/cities?${query}`)
   if (!res.ok) {
-    throw new Error('No fue posible obtener las ciudades')
+    const body = await res.json().catch(() => null)
+    throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener las ciudades')
   }
   return res.json()
 }
@@ -59,7 +62,8 @@ export async function getCities(cityName: string, pageNumber: number, pageSize: 
 export async function getEmployees(): Promise<Employee[]> {
   const res = await fetch(`${API_URL}/api/employees`)
   if (!res.ok) {
-    throw new Error('No fue posible obtener los empleados')
+    const body = await res.json().catch(() => null)
+    throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener los empleados')
   }
   return res.json()
 }
@@ -72,7 +76,8 @@ export async function getEmployees(): Promise<Employee[]> {
 export async function getSalespeople(): Promise<Employee[]> {
   const res = await fetch(`${API_URL}/api/salespeople`)
   if (!res.ok) {
-    throw new Error('No fue posible obtener los vendedores')
+    const body = await res.json().catch(() => null)
+    throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener los vendedores')
   }
   return res.json()
 }

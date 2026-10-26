@@ -12,10 +12,10 @@ import { getInvoices, getInvoiceHeader, getInvoiceForEdit, getInvoiceLines, inse
  */
 export async function listInvoices(req, res) {
     try {
-        const pageNumber = parseInt(req.query.pageNumber, 10)
-        const pageSize = parseInt(req.query.pageSize, 10)
-        if (pageNumber < 1 || pageSize < 1) {
-            return res.status(400).json({message: 'pageNumber y pageSize deben ser mayores a 0'})
+        const pageNumber = Number(req.query.pageNumber)
+        const pageSize = Number(req.query.pageSize)
+        if (!Number.isInteger(pageNumber) || !Number.isInteger(pageSize) || pageNumber < 1 || pageSize < 1) {
+            return res.status(400).json({message: 'pageNumber y pageSize deben ser enteros mayores a 0'})
         }
         if (pageSize > 100) {
             return res.status(400).json({message: 'pageSize no puede ser mayor a 100'})
@@ -30,6 +30,16 @@ export async function listInvoices(req, res) {
         const result = await getInvoices(invoiceID, invoiceDateFrom, invoiceDateTo, customerName, deliveryMethodID, minInvoiceAmount, maxInvoiceAmount, pageNumber, pageSize)
         return paginatedResponse(res, pageNumber, pageSize, result)
     } catch (error) {
+        const sqlErrorCode = Number(error.number)
+        if (sqlErrorCode === 54004) {
+            return res.status(400).json({message: 'La fecha inicial no puede ser mayor que la fecha final.'})
+        }
+        if (sqlErrorCode === 54005) {
+            return res.status(400).json({message: 'Los montos no pueden ser negativos.'})
+        }
+        if (sqlErrorCode === 54006) {
+            return res.status(400).json({message: 'El monto mínimo no puede ser mayor que el monto máximo.'})
+        }
         return res.status(500).json({message: 'Error al obtener facturas'})
     }
 }

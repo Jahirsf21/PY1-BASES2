@@ -23,7 +23,8 @@ export async function getSuppliers(supplierName: string, supplierCategoryID: num
   if (deliveryMethodID !== null) query.set('deliveryMethodID', String(deliveryMethodID))
   const res = await fetch(`${API_URL}/api/suppliers?${query}`)
   if (!res.ok) {
-    throw new Error('No fue posible obtener los proveedores')
+    const body = await res.json().catch(() => null)
+    throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener los proveedores')
   }
   return res.json()
 }
@@ -36,7 +37,8 @@ export async function getSuppliers(supplierName: string, supplierCategoryID: num
 export async function getSupplierCategories(): Promise<SupplierCategory[]> {
   const res = await fetch(`${API_URL}/api/suppliers/categories`)
   if (!res.ok) {
-    throw new Error('No fue posible obtener las categorías de proveedores')
+    const body = await res.json().catch(() => null)
+    throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener las categorías de proveedores')
   }
   return res.json()
 }
@@ -50,7 +52,9 @@ export async function getSupplierCategories(): Promise<SupplierCategory[]> {
 export async function getSupplierByID(supplierID: number): Promise<SupplierDetail[]> {
   const res = await fetch(`${API_URL}/api/suppliers/${supplierID}`)
   if (!res.ok) {
-    throw new Error(res.status === 404 ? 'Proveedor no encontrado' : 'No fue posible obtener el proveedor')
+    const body = await res.json().catch(() => null)
+    const fallbackMessage = res.status === 404 ? 'Proveedor no encontrado' : 'No fue posible obtener el proveedor'
+    throw new Error(typeof body?.message === 'string' ? body.message : fallbackMessage)
   }
   return res.json()
 }
@@ -64,7 +68,8 @@ export async function getSupplierByID(supplierID: number): Promise<SupplierDetai
 export async function getSupplierContactsByID(supplierID: number): Promise<SupplierContact[]> {
   const res = await fetch(`${API_URL}/api/suppliers/${supplierID}/contacts`)
   if (!res.ok) {
-    throw new Error('No fue posible obtener los contactos del proveedor')
+    const body = await res.json().catch(() => null)
+    throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener los contactos del proveedor')
   }
   return res.json()
 }
@@ -78,7 +83,8 @@ export async function getSupplierContactsByID(supplierID: number): Promise<Suppl
 export async function getSupplierAddressByID(supplierID: number): Promise<SupplierAddress[]> {
   const res = await fetch(`${API_URL}/api/suppliers/${supplierID}/address`)
   if (!res.ok) {
-    throw new Error('No fue posible obtener la dirección del proveedor')
+    const body = await res.json().catch(() => null)
+    throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener la dirección del proveedor')
   }
   return res.json()
 }
@@ -92,7 +98,9 @@ export async function getSupplierAddressByID(supplierID: number): Promise<Suppli
 export async function getSupplierForEdit(supplierID: number): Promise<SupplierEdit> {
   const res = await fetch(`${API_URL}/api/suppliers/${supplierID}/edit`)
   if (!res.ok) {
-    throw new Error(res.status === 404 ? 'Proveedor no encontrado' : 'No fue posible cargar el proveedor para editar')
+    const body = await res.json().catch(() => null)
+    const fallbackMessage = res.status === 404 ? 'Proveedor no encontrado' : 'No fue posible cargar el proveedor para editar'
+    throw new Error(typeof body?.message === 'string' ? body.message : fallbackMessage)
   }
   return res.json()
 }

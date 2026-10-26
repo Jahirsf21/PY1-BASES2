@@ -97,7 +97,7 @@ export default function SalesPage() {
   function handlePageSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     const page = Number(new FormData(event.currentTarget).get('pageNumber'))
-    if (!isLoading && Number.isInteger(page) && page >= 1 && page <= totalPages) {
+    if (!isLoading && !error && Number.isInteger(page) && page >= 1 && page <= totalPages) {
       changePage(page)
     }
   }
@@ -336,7 +336,7 @@ export default function SalesPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={pageNumber === 1 || isLoading}
+                  disabled={pageNumber === 1 || isLoading || !!error || totalPages === 0}
                   onClick={() => changePage(pageNumber - 1)}
                 >
                   <ChevronLeftIcon data-icon="inline-start" />
@@ -345,7 +345,7 @@ export default function SalesPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={pageNumber >= totalPages || isLoading}
+                  disabled={pageNumber >= totalPages || isLoading || !!error}
                   onClick={() => changePage(pageNumber + 1)}
                 >
                   Siguiente
@@ -364,7 +364,7 @@ export default function SalesPage() {
                   step={1}
                   required
                   defaultValue={pageNumber}
-                  disabled={isLoading || totalPages === 0}
+                  disabled={isLoading || !!error || totalPages === 0}
                   onKeyDown={(event) => { if (event.key === '-') event.preventDefault() }}
                   onChange={(event) => {
                     if (event.currentTarget.value !== '' && Number(event.currentTarget.value) < 1) {
@@ -373,7 +373,7 @@ export default function SalesPage() {
                   }}
                   className="w-16 text-center"
                 />
-                <Button type="submit" variant="outline" disabled={isLoading || totalPages === 0}>
+                <Button type="submit" variant="outline" disabled={isLoading || !!error || totalPages === 0}>
                   Ir
                 </Button>
               </form>

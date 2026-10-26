@@ -38,7 +38,8 @@ export async function getInvoices(filters: InvoiceFilters, pageNumber: number, p
   }
   const res = await fetch(`${API_URL}/api/sales?${query}`)
   if (!res.ok) {
-    throw new Error('No fue posible obtener las facturas')
+    const body = await res.json().catch(() => null)
+    throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener las facturas')
   }
   return res.json()
 }
@@ -52,7 +53,9 @@ export async function getInvoices(filters: InvoiceFilters, pageNumber: number, p
 export async function getInvoiceByID(invoiceID: number): Promise<InvoiceHeader[]> {
   const res = await fetch(`${API_URL}/api/sales/${invoiceID}`)
   if (!res.ok) {
-    throw new Error(res.status === 404 ? 'Factura no encontrada' : 'No fue posible obtener la factura')
+    const body = await res.json().catch(() => null)
+    const fallbackMessage = res.status === 404 ? 'Factura no encontrada' : 'No fue posible obtener la factura'
+    throw new Error(typeof body?.message === 'string' ? body.message : fallbackMessage)
   }
   return res.json()
 }
@@ -67,9 +70,6 @@ export async function getInvoiceLinesByID(invoiceID: number): Promise<InvoiceLin
   const res = await fetch(`${API_URL}/api/sales/${invoiceID}/lines`)
   if (!res.ok) {
     const body = await res.json().catch(() => null)
-    if (res.status === 404 && body?.message === 'Líneas de la factura no encontradas') {
-      return []
-    }
     throw new Error(typeof body?.message === 'string' ? body.message : 'No fue posible obtener las líneas de la factura')
   }
   return res.json()
@@ -84,7 +84,9 @@ export async function getInvoiceLinesByID(invoiceID: number): Promise<InvoiceLin
 export async function getInvoiceForEdit(invoiceID: number): Promise<InvoiceEdit> {
   const res = await fetch(`${API_URL}/api/sales/${invoiceID}/edit`)
   if (!res.ok) {
-    throw new Error(res.status === 404 ? 'Factura no encontrada' : 'No fue posible cargar la factura para editar')
+    const body = await res.json().catch(() => null)
+    const fallbackMessage = res.status === 404 ? 'Factura no encontrada' : 'No fue posible cargar la factura para editar'
+    throw new Error(typeof body?.message === 'string' ? body.message : fallbackMessage)
   }
   return res.json()
 }
