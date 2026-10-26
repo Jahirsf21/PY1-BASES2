@@ -8,55 +8,23 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from '@/components/ui/toast'
-import { getCustomerCategories } from '@/app/api/customers'
-import { getSupplierCategories } from '@/app/api/suppliers'
 import { getStockGroups } from '@/app/api/stockItems'
 import { getInvoiceYears, getPurchaseYears } from '@/app/api/stats'
 import type { MonthlyTrackingFilters, ReportYearSource, YearFilters, YearRangeFilters } from '@/lib/types/stats'
 import type { StockGroup } from '@/lib/types/stockItems'
 import { months } from '@/app/reports/report-view'
 
-interface CategoryOption {
-  id: number
-  label: string
-}
-
 interface SummaryReportFiltersProps {
   entity: 'customer' | 'supplier'
   name: string
-  categoryID: number | null
+  categoryName: string
   onNameChange: (value: string) => void
-  onCategoryChange: (value: number | null) => void
+  onCategoryChange: (value: string) => void
 }
 
-/** Filtros de nombre y selección de categorías para los resúmenes de clientes y proveedores. */
-export function SummaryReportFilters({ entity, name, categoryID, onNameChange, onCategoryChange }: SummaryReportFiltersProps) {
-  const [categories, setCategories] = useState<CategoryOption[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+/** Filtros de texto por nombre y categoría para los resúmenes de clientes y proveedores. */
+export function SummaryReportFilters({ entity, name, categoryName, onNameChange, onCategoryChange }: SummaryReportFiltersProps) {
   const isCustomer = entity === 'customer'
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function loadCategories() {
-      setIsLoading(true)
-      try {
-        const options = entity === 'customer'
-          ? (await getCustomerCategories()).map((category) => ({ id: category.CustomerCategoryID, label: category.NombreCategoria }))
-          : (await getSupplierCategories()).map((category) => ({ id: category.SupplierCategoryID, label: category.NombreCategoriaProveedor }))
-        if (!cancelled) {
-          setCategories(options)
-        }
-      } catch {
-        if (!cancelled) toast.add({ type: 'error', title: 'No se pudieron cargar las categorías', description: `No fue posible obtener las categorías de ${entity === 'customer' ? 'clientes' : 'proveedores'}`, priority: 'high', timeout: 8000 })
-      } finally {
-        if (!cancelled) setIsLoading(false)
-      }
-    }
-
-    void loadCategories()
-    return () => { cancelled = true }
-  }, [entity])
 
   return (
     <>
@@ -66,31 +34,7 @@ export function SummaryReportFilters({ entity, name, categoryID, onNameChange, o
       </div>
       <div className="grid gap-2">
         <Label htmlFor="reportCategory">Categoría</Label>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            id="reportCategory"
-            type="button"
-            disabled={isLoading}
-            aria-busy={isLoading}
-            className="flex h-8 w-full items-center justify-between gap-2 rounded-lg border border-input bg-transparent px-2.5 text-left text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 dark:bg-input/30"
-          >
-            <span className="min-w-0 truncate">{isLoading ? 'Cargando categorías...' : categoryID === null ? 'Todas las categorías' : categories.find((category) => category.id === categoryID)?.label ?? 'Categoría seleccionada'}</span>
-            <ChevronDownIcon className="size-4 shrink-0" aria-hidden="true" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="max-w-[calc(100vw-2rem)]">
-            <DropdownMenuRadioGroup
-              value={categoryID === null ? '' : String(categoryID)}
-              onValueChange={(value) => onCategoryChange(value === '' ? null : Number(value))}
-            >
-              <DropdownMenuRadioItem value="" closeOnClick>Todas las categorías</DropdownMenuRadioItem>
-              {categories.map((category) => (
-                <DropdownMenuRadioItem key={category.id} value={String(category.id)} closeOnClick>
-                  {category.label}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Input id="reportCategory" placeholder="Buscar por categoría" value={categoryName} onChange={(event) => onCategoryChange(event.target.value)} />
       </div>
     </>
   )

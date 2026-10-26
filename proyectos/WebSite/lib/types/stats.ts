@@ -15,7 +15,7 @@ export interface AmountSummary {
   MontoPromedio: number | null
 }
 
-/** Resumen de montos de las líneas de compra por proveedor y categoría. */
+/** Resumen de montos de las órdenes de compra completas por proveedor y categoría. */
 export interface SupplierPurchaseSummary extends AmountSummary {
   NombreProveedor: string
   NombreCategoriaProveedor: string
@@ -97,13 +97,13 @@ export interface SupplierPurchaseTracking {
 /** Filtros del resumen de compras por proveedor. */
 export interface SupplierPurchaseSummaryFilters {
   supplierName: string
-  supplierCategoryID: number | null
+  supplierCategoryName: string
 }
 
 /** Filtros del resumen de ventas por cliente. */
 export interface CustomerSalesSummaryFilters {
   customerName: string
-  customerCategoryID: number | null
+  customerCategoryName: string
 }
 
 /** Rango de años seleccionado para los rankings anuales. */

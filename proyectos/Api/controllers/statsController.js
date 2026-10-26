@@ -34,17 +34,17 @@ export async function listInvoiceYears(req, res) {
 }
 
 /**
- * Obtiene el resumen de montos de las líneas de compra por proveedor y categoría.
+ * Obtiene el resumen de montos de las órdenes de compra por proveedor y categoría.
  *
- * @param {import('express').Request} req Petición con supplierName y supplierCategoryID opcionales en req.query.
+ * @param {import('express').Request} req Petición con supplierName y supplierCategoryName opcionales en req.query.
  * @param {import('express').Response} res Respuesta HTTP.
  * @returns {Promise<import('express').Response>} Resumen de proveedores y fila de resumen general.
  */
 export async function listSupplierPurchaseSummary(req, res) {
     try {
         const supplierName = req.query.supplierName
-        const supplierCategoryID = req.query.supplierCategoryID
-        const result = await getSupplierPurchaseSummary(supplierName, supplierCategoryID)
+        const supplierCategoryName = req.query.supplierCategoryName
+        const result = await getSupplierPurchaseSummary(supplierName, supplierCategoryName)
         return res.json(result)
     } catch (error) {
         return res.status(500).json({message: 'Error al obtener el resumen de compras por proveedor'})
@@ -54,7 +54,7 @@ export async function listSupplierPurchaseSummary(req, res) {
 /**
  * Obtiene una página del resumen de montos facturados por cliente y categoría.
  *
- * @param {import('express').Request} req Petición con customerName, customerCategoryID, pageNumber y pageSize en req.query.
+ * @param {import('express').Request} req Petición con customerName, customerCategoryName, pageNumber y pageSize en req.query.
  * @param {import('express').Response} res Respuesta HTTP.
  * @returns {Promise<import('express').Response>} Resumen paginado con el total de registros.
  */
@@ -69,8 +69,8 @@ export async function listCustomerSalesSummary(req, res) {
             return res.status(400).json({message: 'pageSize no puede ser mayor a 100'})
         }
         const customerName = req.query.customerName
-        const customerCategoryID = req.query.customerCategoryID
-        const result = await getCustomerSalesSummary(customerName, customerCategoryID, pageNumber, pageSize)
+        const customerCategoryName = req.query.customerCategoryName
+        const result = await getCustomerSalesSummary(customerName, customerCategoryName, pageNumber, pageSize)
         return paginatedResponse(res, pageNumber, pageSize, result)
     } catch (error) {
         return res.status(500).json({message: 'Error al obtener el resumen de ventas por cliente'})

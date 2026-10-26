@@ -7,7 +7,7 @@ import { reportOptions } from '@/app/reports/report-options'
 import { ReportView } from '@/app/reports/report-view'
 import type { ReportColumn } from '@/app/reports/report-view'
 
-const initialFilters: CustomerSalesSummaryFilters = { customerName: '', customerCategoryID: null }
+const initialFilters: CustomerSalesSummaryFilters = { customerName: '', customerCategoryName: '' }
 
 const columns: ReportColumn<CustomerSalesSummary>[] = [
   { key: 'NombreCliente', label: 'Cliente', primary: true },
@@ -18,7 +18,7 @@ const columns: ReportColumn<CustomerSalesSummary>[] = [
 ]
 
 function loadSummary(filters: CustomerSalesSummaryFilters, pageNumber: number, pageSize: number) {
-  return getCustomerSalesSummary(filters.customerName, filters.customerCategoryID, pageNumber, pageSize)
+  return getCustomerSalesSummary(filters.customerName, filters.customerCategoryName, pageNumber, pageSize)
 }
 
 export default function CustomerSalesSummaryPage() {
@@ -37,9 +37,9 @@ export default function CustomerSalesSummaryPage() {
         <SummaryReportFilters
           entity="customer"
           name={filters.customerName}
-          categoryID={filters.customerCategoryID}
+          categoryName={filters.customerCategoryName}
           onNameChange={(value) => setFilters((previous) => ({ ...previous, customerName: value }))}
-          onCategoryChange={(value) => setFilters((previous) => ({ ...previous, customerCategoryID: value }))}
+          onCategoryChange={(value) => setFilters((previous) => ({ ...previous, customerCategoryName: value }))}
         />
       )}
     />

@@ -7,7 +7,7 @@ import { reportOptions } from '@/app/reports/report-options'
 import { ReportView } from '@/app/reports/report-view'
 import type { ReportColumn } from '@/app/reports/report-view'
 
-const initialFilters: SupplierPurchaseSummaryFilters = { supplierName: '', supplierCategoryID: null }
+const initialFilters: SupplierPurchaseSummaryFilters = { supplierName: '', supplierCategoryName: '' }
 
 const columns: ReportColumn<SupplierPurchaseSummary>[] = [
   { key: 'NombreProveedor', label: 'Proveedor', primary: true },
@@ -18,7 +18,7 @@ const columns: ReportColumn<SupplierPurchaseSummary>[] = [
 ]
 
 async function loadSummary(filters: SupplierPurchaseSummaryFilters) {
-  return getSupplierPurchaseSummary(filters.supplierName, filters.supplierCategoryID)
+  return getSupplierPurchaseSummary(filters.supplierName, filters.supplierCategoryName)
 }
 
 export default function SupplierPurchaseSummaryPage() {
@@ -36,9 +36,9 @@ export default function SupplierPurchaseSummaryPage() {
         <SummaryReportFilters
           entity="supplier"
           name={filters.supplierName}
-          categoryID={filters.supplierCategoryID}
+          categoryName={filters.supplierCategoryName}
           onNameChange={(value) => setFilters((previous) => ({ ...previous, supplierName: value }))}
-          onCategoryChange={(value) => setFilters((previous) => ({ ...previous, supplierCategoryID: value }))}
+          onCategoryChange={(value) => setFilters((previous) => ({ ...previous, supplierCategoryName: value }))}
         />
       )}
     />

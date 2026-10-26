@@ -32,17 +32,14 @@ export async function getInvoiceYears(): Promise<ReportYear[]> {
 }
 
 /**
- * Obtiene los montos máximo, mínimo y promedio de compras por proveedor y categoría.
+ * Obtiene los montos máximo, mínimo y promedio de órdenes de compra completas por proveedor y categoría.
  *
  * @param supplierName Nombre parcial o completo del proveedor.
- * @param supplierCategoryID Categoría de proveedor seleccionada o null para incluir todas.
+ * @param supplierCategoryName Nombre parcial de categoría o texto vacío para incluir todas.
  * @returns Resumen de proveedores, incluyendo una fila de resumen general.
  */
-export async function getSupplierPurchaseSummary(supplierName: string, supplierCategoryID: number | null): Promise<SupplierPurchaseSummary[]> {
-  const query = new URLSearchParams({ supplierName })
-  if (supplierCategoryID !== null) {
-    query.set('supplierCategoryID', String(supplierCategoryID))
-  }
+export async function getSupplierPurchaseSummary(supplierName: string, supplierCategoryName: string): Promise<SupplierPurchaseSummary[]> {
+  const query = new URLSearchParams({ supplierName, supplierCategoryName })
   const res = await fetch(`${API_URL}/api/stats/supplier-purchase-summary?${query}`)
   if (!res.ok) {
     const body = await res.json().catch(() => null)
@@ -55,16 +52,13 @@ export async function getSupplierPurchaseSummary(supplierName: string, supplierC
  * Obtiene una página del resumen de ventas por cliente, incluyendo el resumen general.
  *
  * @param customerName Nombre parcial o completo del cliente.
- * @param customerCategoryID Categoría de cliente seleccionada o null para incluir todas.
+ * @param customerCategoryName Nombre parcial de categoría o texto vacío para incluir todas.
  * @param pageNumber Número de página a consultar.
  * @param pageSize Cantidad de registros por página.
  * @returns Respuesta paginada con los montos máximo, mínimo y promedio.
  */
-export async function getCustomerSalesSummary(customerName: string, customerCategoryID: number | null, pageNumber: number, pageSize: number): Promise<CustomerSalesSummaryResponse> {
-  const query = new URLSearchParams({ customerName, pageNumber: String(pageNumber), pageSize: String(pageSize) })
-  if (customerCategoryID !== null) {
-    query.set('customerCategoryID', String(customerCategoryID))
-  }
+export async function getCustomerSalesSummary(customerName: string, customerCategoryName: string, pageNumber: number, pageSize: number): Promise<CustomerSalesSummaryResponse> {
+  const query = new URLSearchParams({ customerName, customerCategoryName, pageNumber: String(pageNumber), pageSize: String(pageSize) })
   const res = await fetch(`${API_URL}/api/stats/customer-sales-summary?${query}`)
   if (!res.ok) {
     const body = await res.json().catch(() => null)

@@ -26,35 +26,35 @@ export async function getInvoiceYears() {
 }
 
 /**
- * Obtiene los montos máximo, mínimo y promedio de las líneas de compra por proveedor.
- * Permite filtrar por nombre y una categoría e incluye una fila de resumen general.
+ * Obtiene los montos máximo, mínimo y promedio de las órdenes de compra por proveedor.
+ * Permite filtrar por nombre del proveedor y nombre de categoría e incluye un resumen general.
  *
  * @param {string|null} supplierName Nombre del proveedor (búsqueda parcial) o null para no filtrar.
- * @param {number|null} supplierCategoryID ID de la categoría del proveedor o null para no filtrar.
+ * @param {string|null} supplierCategoryName Nombre de la categoría del proveedor (búsqueda parcial) o null para no filtrar.
  * @returns {Promise<object[]>} Resumen de compras por proveedor y resumen general.
  */
-export async function getSupplierPurchaseSummary(supplierName, supplierCategoryID) {
+export async function getSupplierPurchaseSummary(supplierName, supplierCategoryName) {
     const connection = (await getPool()).request()
     connection.input('SupplierName', sql.NVarChar, supplierName)
-    connection.input('SupplierCategoryID', sql.Int, supplierCategoryID)
+    connection.input('SupplierCategoryName', sql.NVarChar, supplierCategoryName)
     const result = await connection.execute('Purchasing.GetSupplierPurchaseSummary')
     return result.recordset
 }
 
 /**
  * Obtiene una página del resumen de montos facturados por cliente y categoría.
- * Permite filtrar por nombre y una categoría e incluye una fila de resumen general.
+ * Permite filtrar por nombre del cliente y nombre de categoría e incluye un resumen general.
  *
  * @param {string|null} customerName Nombre del cliente (búsqueda parcial) o null para no filtrar.
- * @param {number|null} customerCategoryID ID de la categoría del cliente o null para no filtrar.
+ * @param {string|null} customerCategoryName Nombre de la categoría del cliente (búsqueda parcial) o null para no filtrar.
  * @param {number} pageNumber Número de página solicitado.
  * @param {number} pageSize Cantidad de registros por página.
  * @returns {Promise<{totalCount: number, data: object[]}>} Total de registros y resumen de la página.
  */
-export async function getCustomerSalesSummary(customerName, customerCategoryID, pageNumber, pageSize) {
+export async function getCustomerSalesSummary(customerName, customerCategoryName, pageNumber, pageSize) {
     const connection = (await getPool()).request()
     connection.input('CustomerName', sql.NVarChar, customerName)
-    connection.input('CustomerCategoryID', sql.Int, customerCategoryID)
+    connection.input('CustomerCategoryName', sql.NVarChar, customerCategoryName)
     connection.input('PageNumber', sql.Int, pageNumber)
     connection.input('PageSize', sql.Int, pageSize)
     connection.output('TotalCount', sql.Int)

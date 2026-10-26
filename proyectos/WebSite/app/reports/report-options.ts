@@ -27,7 +27,7 @@ export const reportOptions = {
   },
   'supplier-purchase-summary': {
     title: 'Resumen de compras por proveedor',
-    description: 'Montos máximo, mínimo y promedio de las líneas de compra por proveedor y categoría, con un resumen general.',
+    description: 'Montos máximo, mínimo y promedio de las órdenes de compra completas por proveedor y categoría, con un resumen general.',
     group: 'Compras',
   },
   'top-suppliers-by-year': {

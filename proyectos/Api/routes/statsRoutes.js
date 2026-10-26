@@ -18,17 +18,17 @@ router.get('/stats/invoice-years', listInvoiceYears)
 
 /**
  * GET /stats/supplier-purchase-summary
- * Devuelve el resumen de montos de compras por proveedor y categoría, con un resumen general.
- * Query params: supplierName, supplierCategoryID
- * supplierCategoryID: una categoría de proveedor; ausente para consultar todas.
+ * Devuelve el resumen de montos de órdenes de compra por proveedor y categoría, con un resumen general.
+ * Query params: supplierName, supplierCategoryName
+ * supplierCategoryName: nombre parcial de categoría; ausente o vacío para consultar todas.
  */
 router.get('/stats/supplier-purchase-summary', listSupplierPurchaseSummary)
 
 /**
  * GET /stats/customer-sales-summary
  * Devuelve una página del resumen de montos de ventas por cliente y categoría.
- * Query params: customerName, customerCategoryID, pageNumber, pageSize
- * customerCategoryID: una categoría de cliente; ausente para consultar todas.
+ * Query params: customerName, customerCategoryName, pageNumber, pageSize
+ * customerCategoryName: nombre parcial de categoría; ausente o vacío para consultar todas.
  */
 router.get('/stats/customer-sales-summary', listCustomerSalesSummary)
 

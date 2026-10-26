@@ -1,27 +1,35 @@
 /*
-    Resume los montos de las líneas de órdenes de compra por proveedor y categoría,
-    aplicando filtros opcionales por nombre y categoría. Incluye un resumen general.
+    Resume los montos de las órdenes de compra por proveedor y categoría,
+    aplicando filtros opcionales por nombre del proveedor y nombre de categoría.
+    Incluye un resumen general.
     Devuelve: NombreProveedor, NombreCategoriaProveedor, MontoMaximo, MontoMinimo, MontoPromedio
 */
 create or alter procedure Purchasing.GetSupplierPurchaseSummary
     @SupplierName nvarchar(100) = null,
-    @SupplierCategoryID int = null
+    @SupplierCategoryName nvarchar(50) = null
 as
 	begin
 		set nocount on
 		select
 			isnull(sp.SupplierName, 'Resumen') as NombreProveedor,
 			isnull(sg.SupplierCategoryName, ' ') as NombreCategoriaProveedor,
-			max(pol.OrderedOuters * pol.ExpectedUnitPricePerOuter) as MontoMaximo,
-			min(pol.OrderedOuters * pol.ExpectedUnitPricePerOuter) as MontoMinimo,
-			avg(pol.OrderedOuters * pol.ExpectedUnitPricePerOuter) as MontoPromedio
-		from dbo.PurchaseOrders po
-		inner join dbo.PurchaseOrderLines pol on po.PurchaseOrderID = pol.PurchaseOrderID
-		inner join dbo.Suppliers sp on po.SupplierID = sp.SupplierID
+			max(t.MontoComprado) as MontoMaximo,
+			min(t.MontoComprado) as MontoMinimo,
+			avg(t.MontoComprado) as MontoPromedio
+		from (
+			select
+				po.PurchaseOrderID,
+				po.SupplierID,
+				sum(pol.OrderedOuters * pol.ExpectedUnitPricePerOuter) as MontoComprado
+			from dbo.PurchaseOrders po
+			inner join dbo.PurchaseOrderLines pol on po.PurchaseOrderID = pol.PurchaseOrderID
+			group by po.PurchaseOrderID, po.SupplierID
+		) t
+		inner join dbo.Suppliers sp on t.SupplierID = sp.SupplierID
 		inner join dbo.SupplierCategories sg on sp.SupplierCategoryID = sg.SupplierCategoryID
 		where
             (@SupplierName is null or sp.SupplierName like '%' + @SupplierName + '%')
-            and (@SupplierCategoryID is null or sp.SupplierCategoryID = @SupplierCategoryID)
+            and (@SupplierCategoryName is null or sg.SupplierCategoryName like '%' + @SupplierCategoryName + '%')
 		group by rollup ((sp.SupplierName, sg.SupplierCategoryName))
 		order by grouping(sp.SupplierName), sp.SupplierName, sg.SupplierCategoryName
 	end
@@ -29,24 +37,31 @@ go
 
 /*
     Resume los montos de las facturas por cliente y categoría, aplicando filtros
-    opcionales por nombre y categoría. Incluye un resumen general y pagina los resultados;
-    @TotalCount devuelve la cantidad de clientes más la fila de resumen.
+    opcionales por nombre del cliente y nombre de categoría.
+    Incluye un resumen general y pagina los resultados;
+    @TotalCount devuelve la cantidad de filas, incluyendo el resumen general.
     Devuelve: NombreCliente, NombreCategoriaCliente, MontoMaximo, MontoMinimo, MontoPromedio
 */
 create or alter procedure Sales.GetCustomerSalesSummary
 	@CustomerName nvarchar(100) = null,
-	@CustomerCategoryID int = null,
+	@CustomerCategoryName nvarchar(50) = null,
 	@PageNumber int = 1,
 	@PageSize int = 10,
 	@TotalCount int = 0 output
 as
 	begin
 		set nocount on
-		select @TotalCount = count(*) + 1
-		from dbo.Customers cs
-		where (@CustomerName is null or cs.CustomerName like '%' + @CustomerName + '%')
-			and (@CustomerCategoryID is null or cs.CustomerCategoryID = @CustomerCategoryID)
-			and exists (select 1 from dbo.Invoices iv where iv.CustomerID = cs.CustomerID)
+		select @TotalCount = count(*)
+		from (
+			select cs.CustomerName, cg.CustomerCategoryName
+			from dbo.InvoiceLines ivl
+			inner join dbo.Invoices iv on ivl.InvoiceID = iv.InvoiceID
+			inner join dbo.Customers cs on iv.CustomerID = cs.CustomerID
+			inner join dbo.CustomerCategories cg on cs.CustomerCategoryID = cg.CustomerCategoryID
+			where (@CustomerName is null or cs.CustomerName like '%' + @CustomerName + '%')
+				and (@CustomerCategoryName is null or cg.CustomerCategoryName like '%' + @CustomerCategoryName + '%')
+			group by rollup ((cs.CustomerName, cg.CustomerCategoryName))
+		) t
 		select
 			isnull(cs.CustomerName, 'Resumen') as NombreCliente,
 			isnull(cg.CustomerCategoryName, ' ') as NombreCategoriaCliente,
@@ -64,7 +79,7 @@ as
 		inner join dbo.Customers cs on iv.CustomerID = cs.CustomerID
 		inner join dbo.CustomerCategories cg on cs.CustomerCategoryID = cg.CustomerCategoryID
 		where (@CustomerName is null or cs.CustomerName like '%' + @CustomerName + '%')
-			and (@CustomerCategoryID is null or cg.CustomerCategoryID = @CustomerCategoryID)
+			and (@CustomerCategoryName is null or cg.CustomerCategoryName like '%' + @CustomerCategoryName + '%')
 		group by rollup ((cs.CustomerName, cg.CustomerCategoryName))
 		order by grouping(cs.CustomerName), cs.CustomerName, cg.CustomerCategoryName
 		offset (@PageNumber - 1) * @PageSize rows
