@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import {env} from './config/env.js'
 
+import authRoutes from './routes/authRoutes.js'
 import customersRoutes from './routes/customersRoutes.js'
 import supplierRoutes from './routes/suppliersRoutes.js'
 import stockItemsRoutes from './routes/stockItemsRoutes.js'
@@ -18,6 +19,7 @@ app.use(cors({origin:`http://localhost:${env.APP_PORT}`}))
 app.use(express.json())
 
 // Rutas de la API
+app.use('/api', authRoutes)
 app.use('/api', customersRoutes)
 app.use('/api', supplierRoutes)
 app.use('/api', stockItemsRoutes)

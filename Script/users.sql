@@ -31,30 +31,28 @@ if object_id(N'dbo.Users', N'U') is null
     end
 go
 
+
 /*
-    Comprueba que exista un usuario activo con el nombre de usuario y la contraseña indicados.
-    Compara directamente la contraseña con el valor almacenado
-    Devuelve: 1 si las credenciales coinciden y el usuario está activo; 0 en caso contrario.
+    Comprueba las credenciales de un usuario activo mediante SHA2_256.
+    No devuelve filas si las credenciales no coinciden o el usuario está inactivo.
+    Devuelve: UserID, UserName, FullName, Rol, Active
 */
-create or alter function dbo.ValidateUser (
-    @UserName nvarchar(50), 
+create or alter procedure dbo.LoginUser
+    @UserName nvarchar(50),
     @Password nvarchar(255)
-)
-returns bit
 as
-    begin
-        declare @isValidUser bit = 0
-        if exists (
-            select 1
-            from dbo.Users
-            where 
-                UserName = @UserName 
-                and [Password] = @Password 
-                and Active = 1
-        )
-        begin
-            set @isValidUser = 1
-        end
-        return @isValidUser 
-    end
+begin
+    set nocount on;
+
+    select
+        UserID,
+        UserName,
+        FullName,
+        Rol,
+        Active
+    from dbo.Users
+    where UserName = @UserName
+      and [Password] = convert(varchar(64), hashbytes('SHA2_256', @Password), 2)
+      and Active = 1;
+end
 go

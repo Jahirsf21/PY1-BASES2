@@ -139,6 +139,19 @@ function result(errors) {
 }
 
 /**
+ * Valida las credenciales de inicio de sesión antes de ejecutar el procedimiento.
+ *
+ * @param {object} data Credenciales recibidas en la solicitud.
+ * @returns {{fields: string[], errors: Record<string, string>}} Campos inválidos y sus mensajes.
+ */
+export function validateLogin(data) {
+    const errors = {}
+    checkText(errors, 'userName', 'Nombre de usuario', data.userName, 50, true)
+    checkText(errors, 'password', 'Contraseña', data.password, 255, true)
+    return result(errors)
+}
+
+/**
  * Valida los datos de creación o actualización de un cliente antes de ejecutar el procedimiento.
  * Al crear, billToCustomerID puede omitirse; al actualizar, es obligatorio.
  *
