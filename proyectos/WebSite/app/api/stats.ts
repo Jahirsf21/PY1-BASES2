@@ -154,7 +154,7 @@ export async function getProductCategorySalesByYear(): Promise<ProductCategorySa
  * @param stockGroupIDs Categorías de productos seleccionadas o un arreglo vacío para incluir todas.
  * @param pageNumber Número de página a consultar.
  * @param pageSize Cantidad de registros por página.
- * @returns Respuesta paginada con los montos de las facturas por cliente, año y mes.
+ * @returns Respuesta paginada con montos de primera y última factura y cantidades por cliente, año y mes.
  */
 export async function getCustomerSalesTracking(year: number | null, month: number | null, stockGroupIDs: number[], pageNumber: number, pageSize: number): Promise<CustomerSalesTrackingResponse> {
   const query = new URLSearchParams({ stockGroupIDsJson: JSON.stringify(stockGroupIDs), pageNumber: String(pageNumber), pageSize: String(pageSize) })
@@ -180,7 +180,7 @@ export async function getCustomerSalesTracking(year: number | null, month: numbe
  * @param stockGroupIDs Categorías de productos seleccionadas o un arreglo vacío para incluir todas.
  * @param pageNumber Número de página a consultar.
  * @param pageSize Cantidad de registros por página.
- * @returns Respuesta paginada con los montos de las compras por proveedor, año y mes.
+ * @returns Respuesta paginada con montos de primera y última compra y cantidades de empaques por proveedor, año y mes.
  */
 export async function getSupplierPurchaseTracking(year: number | null, month: number | null, stockGroupIDs: number[], pageNumber: number, pageSize: number): Promise<SupplierPurchaseTrackingResponse> {
   const query = new URLSearchParams({ stockGroupIDsJson: JSON.stringify(stockGroupIDs), pageNumber: String(pageNumber), pageSize: String(pageSize) })

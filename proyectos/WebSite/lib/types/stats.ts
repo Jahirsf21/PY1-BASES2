@@ -68,7 +68,7 @@ export interface ProductCategorySalesByYear {
   'Packaging Materials': number | null
 }
 
-/** Seguimiento de las facturas de un cliente por año y mes. */
+/** Cantidades y montos de primera y última factura de un cliente por año y mes. */
 export interface CustomerSalesTracking {
   NombreCliente: string
   Año: number
@@ -76,12 +76,12 @@ export interface CustomerSalesTracking {
   Categorias: string | null
   MontoPrimeraFactura: number
   MontoUltimaFactura: number
-  MontoTotalMes: number
-  MontoMaximo: number
-  MontoMinimo: number
+  CantidadTotalMes: number
+  CantidadMaxima: number
+  CantidadMinima: number
 }
 
-/** Seguimiento de las órdenes de compra de un proveedor por año y mes. */
+/** Seguimiento de compras por proveedor, año y mes, con cantidades expresadas en empaques. */
 export interface SupplierPurchaseTracking {
   NombreProveedor: string
   Año: number
@@ -89,9 +89,9 @@ export interface SupplierPurchaseTracking {
   Categorias: string | null
   MontoPrimeraCompra: number
   MontoUltimaCompra: number
-  MontoTotalMes: number
-  MontoMaximo: number
-  MontoMinimo: number
+  CantidadTotalMes: number
+  CantidadMaxima: number
+  CantidadMinima: number
 }
 
 /** Filtros del resumen de compras por proveedor. */

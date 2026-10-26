@@ -22,7 +22,7 @@ export const reportOptions = {
   },
   'customer-sales-tracking': {
     title: 'Seguimiento mensual de ventas',
-    description: 'Primera y última factura, monto total, máximo y mínimo por cliente, año y mes, con filtros por categorías de productos.',
+    description: 'Montos de primera y última factura y cantidades total, máxima y mínima por cliente, año y mes, con filtros por categorías de productos.',
     group: 'Ventas',
   },
   'supplier-purchase-summary': {
@@ -37,7 +37,7 @@ export const reportOptions = {
   },
   'supplier-purchase-tracking': {
     title: 'Seguimiento mensual de compras',
-    description: 'Primera y última compra, monto total, máximo y mínimo por proveedor, año y mes, con filtros por categorías de productos.',
+    description: 'Montos de primera y última compra y cantidades total, máxima y mínima de empaques por proveedor, año y mes, con filtros por categorías de productos.',
     group: 'Compras',
   },
 } as const

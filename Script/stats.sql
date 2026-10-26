@@ -245,15 +245,16 @@ as
 go
 
 /*
-    Resume por cliente, año y mes los montos de sus facturas, con filtros opcionales por año,
-    mes y una lista JSON de IDs de categorías de productos (@StockGroupIDsJson, por ejemplo [1, 3, 5]).
+    Resume por cliente, año y mes las cantidades de sus facturas y los montos de la primera y última.
+    Permite filtrar por año, mes y una lista JSON de IDs de categorías de productos (@StockGroupIDsJson, por ejemplo [1, 3, 5]).
     Si la lista es null o está vacía, incluye todas las categorías; ignora los IDs repetidos.
-    Combina los filtros con AND y calcula los montos solo con líneas cuyo producto pertenezca
+    Combina los filtros con AND y calcula los montos y cantidades solo con líneas cuyo producto pertenezca
     a todas las categorías seleccionadas. Incluye sus nombres concatenados por período.
+    Suma las cantidades por factura antes de obtener el total, máximo y mínimo del mes.
     Valida que el año y las categorías existan, que el mes esté entre 1 y 12 y que la lista
     sea un arreglo JSON de números enteros positivos. Pagina los resultados y asigna a @TotalCount la cantidad
     de combinaciones de cliente, año y mes que cumplen los filtros.
-    Devuelve: NombreCliente, Año, Mes, MontoPrimeraFactura, MontoUltimaFactura, MontoTotalMes, MontoMaximo, MontoMinimo, Categorias
+    Devuelve: NombreCliente, Año, Mes, MontoPrimeraFactura, MontoUltimaFactura, Categorias, CantidadTotalMes, CantidadMaxima, CantidadMinima
 */
 create or alter procedure Sales.GetCustomerSalesTracking
 	@Year int = null,
@@ -327,7 +328,7 @@ as
 				iv.InvoiceDate,
 				year(iv.InvoiceDate) as Año,
 				month(iv.InvoiceDate) as Mes,
-				sum(ivl.ExtendedPrice) as MontoFacturado,
+				sum(ivl.Quantity) as CantidadFacturada,
 				first_value(sum(ivl.ExtendedPrice)) over (partition by iv.CustomerID, year(iv.InvoiceDate), month(iv.InvoiceDate) order by iv.InvoiceDate, iv.InvoiceID) as PrimeraFactura,
 				last_value(sum(ivl.ExtendedPrice)) over (partition by iv.CustomerID, year(iv.InvoiceDate), month(iv.InvoiceDate) order by iv.InvoiceDate, iv.InvoiceID rows between unbounded preceding and unbounded following) as UltimaFactura
 			from dbo.Invoices iv
@@ -390,10 +391,10 @@ as
 			apv.Mes,
 			max(apv.PrimeraFactura) as MontoPrimeraFactura,
 			max(apv.UltimaFactura) as MontoUltimaFactura,
-			sum(apv.MontoFacturado) as MontoTotalMes,
-			max(apv.MontoFacturado) as MontoMaximo,
-			min(apv.MontoFacturado) as MontoMinimo,
-		    max(sgbp.Categorias) as Categorias
+		    max(sgbp.Categorias) as Categorias,
+			sum(apv.CantidadFacturada) as CantidadTotalMes,
+			max(apv.CantidadFacturada) as CantidadMaxima,
+			min(apv.CantidadFacturada) as CantidadMinima
 		from AmountPerInvoice apv
 		inner join dbo.Customers cs on apv.CustomerID = cs.CustomerID
 		inner join StockGroupsByPeriod sgbp on apv.CustomerID = sgbp.CustomerID and apv.Año = sgbp.Año and apv.Mes = sgbp.Mes
@@ -405,15 +406,17 @@ as
 go
 
 /*
-    Resume por proveedor, año y mes los montos de sus órdenes de compra, con filtros opcionales por año,
-    mes y una lista JSON de IDs de categorías de productos (@StockGroupIDsJson, por ejemplo [1, 3, 5]).
+    Resume por proveedor, año y mes las cantidades de sus órdenes de compra y los montos de la primera y última.
+    Permite filtrar por año, mes y una lista JSON de IDs de categorías de productos (@StockGroupIDsJson, por ejemplo [1, 3, 5]).
     Si la lista es null o está vacía, incluye todas las categorías; ignora los IDs repetidos.
-    Combina los filtros con AND y calcula los montos solo con líneas cuyo producto pertenezca
+    Combina los filtros con AND y calcula los montos y cantidades solo con líneas cuyo producto pertenezca
     a todas las categorías seleccionadas. Incluye sus nombres concatenados por período.
+    Expresa las cantidades en empaques (OrderedOuters) y las suma por orden antes de obtener
+    el total, máximo y mínimo del mes.
     Valida que el año y las categorías existan, que el mes esté entre 1 y 12 y que la lista
     sea un arreglo JSON de números enteros positivos. Pagina los resultados y asigna a @TotalCount la cantidad
     de combinaciones de proveedor, año y mes que cumplen los filtros.
-    Devuelve: NombreProveedor, Año, Mes, MontoPrimeraCompra, MontoUltimaCompra, MontoTotalMes, MontoMaximo, MontoMinimo, Categorias
+    Devuelve: NombreProveedor, Año, Mes, MontoPrimeraCompra, MontoUltimaCompra, Categorias, CantidadTotalMes, CantidadMaxima, CantidadMinima
 */
 create or alter procedure Purchasing.GetSupplierPurchaseTracking
 	@Year int = null,
@@ -487,7 +490,7 @@ as
 				po.OrderDate,
 				year(po.OrderDate) as Año,
 				month(po.OrderDate) as Mes,
-				sum(pol.OrderedOuters * pol.ExpectedUnitPricePerOuter) as MontoComprado,
+				sum(pol.OrderedOuters) as CantidadComprada,
 				first_value(sum(pol.OrderedOuters * pol.ExpectedUnitPricePerOuter)) over (partition by po.SupplierID, year(po.OrderDate), month(po.OrderDate) order by po.OrderDate, po.PurchaseOrderID) as PrimeraCompra,
 				last_value(sum(pol.OrderedOuters * pol.ExpectedUnitPricePerOuter)) over (partition by po.SupplierID, year(po.OrderDate), month(po.OrderDate) order by po.OrderDate, po.PurchaseOrderID rows between unbounded preceding and unbounded following) as UltimaCompra
 			from dbo.PurchaseOrders po
@@ -550,10 +553,10 @@ as
 			app.Mes,
 			max(app.PrimeraCompra) as MontoPrimeraCompra,
 			max(app.UltimaCompra) as MontoUltimaCompra,
-			sum(app.MontoComprado) as MontoTotalMes,
-			max(app.MontoComprado) as MontoMaximo,
-			min(app.MontoComprado) as MontoMinimo,
-		    max(sgbp.Categorias) as Categorias
+		    max(sgbp.Categorias) as Categorias,
+			sum(app.CantidadComprada) as CantidadTotalMes,
+			max(app.CantidadComprada) as CantidadMaxima,
+			min(app.CantidadComprada) as CantidadMinima
 		from AmountPerPurchase app
 		inner join dbo.Suppliers sp on app.SupplierID = sp.SupplierID
 		inner join StockGroupsByPeriod sgbp on app.SupplierID = sgbp.SupplierID and app.Año = sgbp.Año and app.Mes = sgbp.Mes

@@ -16,9 +16,9 @@ const columns: ReportColumn<SupplierPurchaseTracking>[] = [
   { key: 'Categorias', label: 'Categorías' },
   { key: 'MontoPrimeraCompra', label: 'Primera compra', format: 'amount' },
   { key: 'MontoUltimaCompra', label: 'Última compra', format: 'amount' },
-  { key: 'MontoTotalMes', label: 'Monto total del mes', format: 'amount' },
-  { key: 'MontoMaximo', label: 'Monto máximo', format: 'amount' },
-  { key: 'MontoMinimo', label: 'Monto mínimo', format: 'amount' },
+  { key: 'CantidadTotalMes', label: 'Cantidad total del mes', format: 'count' },
+  { key: 'CantidadMaxima', label: 'Cantidad máxima', format: 'count' },
+  { key: 'CantidadMinima', label: 'Cantidad mínima', format: 'count' },
 ]
 
 function loadTracking(filters: MonthlyTrackingFilters, pageNumber: number, pageSize: number) {

@@ -175,7 +175,7 @@ export async function listProductCategorySalesByYear(req, res) {
  *
  * @param {import('express').Request} req Petición con year, month, stockGroupIDsJson, pageNumber y pageSize en req.query.
  * @param {import('express').Response} res Respuesta HTTP.
- * @returns {Promise<import('express').Response>} Montos de primeras y últimas facturas, total mensual, máximo, mínimo y categorías.
+ * @returns {Promise<import('express').Response>} Montos de primera y última factura, cantidades total, máxima y mínima y categorías.
  */
 export async function listCustomerSalesTracking(req, res) {
     try {
@@ -219,7 +219,7 @@ export async function listCustomerSalesTracking(req, res) {
  *
  * @param {import('express').Request} req Petición con year, month, stockGroupIDsJson, pageNumber y pageSize en req.query.
  * @param {import('express').Response} res Respuesta HTTP.
- * @returns {Promise<import('express').Response>} Montos de primeras y últimas compras, total mensual, máximo, mínimo y categorías.
+ * @returns {Promise<import('express').Response>} Montos de primera y última compra, cantidades total, máxima y mínima de empaques y categorías.
  */
 export async function listSupplierPurchaseTracking(req, res) {
     try {

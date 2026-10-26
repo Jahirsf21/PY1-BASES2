@@ -126,7 +126,8 @@ export async function getProductCategorySalesByYear() {
  * Obtiene una página del seguimiento de ventas por cliente, año y mes.
  * Permite filtrar por una lista JSON de categorías de productos e incluye sus nombres.
  * Cuando se indican categorías, suma las líneas cuyos productos pertenecen a todas ellas.
- * Incluye montos de la primera y última factura, total mensual, máximo y mínimo.
+ * Incluye montos de la primera y última factura y cantidades total, máxima y mínima del mes.
+ * Las cantidades se suman por factura antes del resumen mensual.
  *
  * @param {number|null} year Año de las facturas o null para no filtrar.
  * @param {number|null} month Mes de las facturas (1 a 12) o null para no filtrar.
@@ -154,7 +155,8 @@ export async function getCustomerSalesTracking(year, month, stockGroupIDsJson, p
  * Obtiene una página del seguimiento de compras por proveedor, año y mes.
  * Permite filtrar por una lista JSON de categorías de productos e incluye sus nombres.
  * Cuando se indican categorías, suma las líneas cuyos productos pertenecen a todas ellas.
- * Incluye montos de la primera y última compra, total mensual, máximo y mínimo.
+ * Incluye montos de la primera y última compra y cantidades total, máxima y mínima del mes.
+ * Las cantidades se suman por orden y se expresan en empaques.
  * El procedimiento aplica los filtros al conteo de grupos y a los resultados.
  *
  * @param {number|null} year Año de las compras o null para no filtrar.
